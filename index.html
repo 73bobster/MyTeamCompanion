@@ -545,7 +545,7 @@ let REV=0;
 function save(){REV++;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}if(CLOUD&&typeof schedSync==='function')schedSync()}
 function setCur(id){DB.cur=id;S=DB.teams[id]||EMPTY();V.tab='history';V.matchId=null;V.sess=null;V.sheet=null;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
 const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:'history',step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
-  auth:{mode:'in',email:'',password:'',name:'',invite:'',err:'',busy:false,sent:false},
+  auth:{mode:'in',email:'',password:'',name:'',err:'',busy:false,sent:false},
   draft:{name:'',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',onPitch:11,periods:2,periodMins:45},err:''};
 const T=()=>(V.newTeam||!S.team)?V.draft:S.team;
 const canEdit=()=>S.role==='coach';
@@ -2135,10 +2135,8 @@ async function doAuth(){
     const p=jwtPayload(jwt);
     const prof=await rest('POST','/rpc/ensure_profile',{p_name:a.mode==='up'?(a.name||null):null});
     DB.user={id:p.id||p.sub,email:prof.email||a.email.trim(),name:prof.display_name||a.name||'',isSuper:!!prof.is_superuser};
-    const code=a.invite.trim();a.password='';
+    a.password='';
     let joined=null;
-    if(code){try{joined=await rest('POST','/rpc/redeem_invite',{p_code:code})}catch(e){a.err='Signed in, but the invite code did not work: '+e.message}}
-    a.invite='';
     save();SYNC.state='idle';await syncNow(true);
     if(joined&&DB.teams[joined.team_id])setCur(joined.team_id);
   }catch(e){a.err=e.message}
@@ -2152,7 +2150,7 @@ async function doLink(){
   const name=(a.name||'').trim()||email.split('@')[0];
   a.busy=true;render();
   try{
-    try{localStorage.setItem(PEND,JSON.stringify({name:a.mode==='up'?name:'',invite:a.invite.trim(),t:Date.now()}))}catch(e){}
+    try{localStorage.setItem(PEND,JSON.stringify({name:a.mode==='up'?name:'',t:Date.now()}))}catch(e){}
     const cb=location.origin+location.pathname+'?linked=1';
     const r=await fetch(AUTH_URL+'/sign-in/magic-link',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,name,callbackURL:cb,newUserCallbackURL:cb,errorCallbackURL:cb})});
     const j=await r.json().catch(()=>({}));
@@ -2177,9 +2175,8 @@ async function finishLink(){
     const prof=await rest('POST','/rpc/ensure_profile',{p_name:pend.name||null});
     DB.user={id:p.id||p.sub,email:prof.email||p.email||'',name:prof.display_name||pend.name||'',isSuper:!!prof.is_superuser};
     let joined=null;
-    if(pend.invite){try{joined=await rest('POST','/rpc/redeem_invite',{p_code:pend.invite})}catch(e){a.err='Signed in, but the invite code did not work: '+e.message}}
     try{localStorage.removeItem(PEND)}catch(e){}
-    a.invite='';a.sent=false;save();SYNC.state='idle';await syncNow(true);
+    a.sent=false;save();SYNC.state='idle';await syncNow(true);
     if(joined&&DB.teams[joined.team_id])setCur(joined.team_id);
   }catch(e){a.err=e.message}
   a.busy=false;render();
@@ -2193,10 +2190,6 @@ async function doSignOut(){
   try{await authCall('/sign-out',{})}catch(e){}
   DB=blankDB();S=EMPTY();SYNC.jwt=null;SYNC.state='idle';try{localStorage.removeItem(KEY)}catch(e){}
   V.sheet=null;V.tab='history';render();
-}
-async function joinWithCode(code){
-  const r=await rest('POST','/rpc/redeem_invite',{p_code:code});
-  await syncNow(true);if(DB.teams[r.team_id])setCur(r.team_id);return r;
 }
 async function createTeamCloud(){
   if(V.busy)return;
@@ -2667,11 +2660,6 @@ function evSave(){
 }
 
 /* ---------- extra sheets ---------- */
-async function loadInvites(){
-  try{const l=await rest('GET','/invites?team_id=eq.'+encodeURIComponent(S.team.id)+'&uses_left=gt.0&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&order=created_at.desc');
-    if(V.sheet&&V.sheet.kind==='invite'){V.sheet.d.list=l;renderSheet()}}catch(e){if(V.sheet&&V.sheet.kind==='invite'){V.sheet.d.err=e.message;renderSheet()}}
-}
-const inviteLink=c=>location.origin+location.pathname+'?invite='+c;
 
 /* ---------- export every match, who started where, and every action, as CSV for Excel ---------- */
 const CSV_HEAD=['Team','Match ID','Date','Time','Opponent','Venue','Competition','Referee','Match status','Final score','Row type','Period','Minute','Shirt','Player','Position','Role','Reason','Minutes played','Captain','Event','Detail','Assist shirt','Assist player','Off shirt','Off player','On shirt','On player','Opp number','Opp name','Note','Positive/Negative','Score after (us)','Score after (them)','X (m, 0=left touchline)','Y (m, 0=goal line attacked)','Zone','Distance to goal (m)','Shot angle (deg)','In box','Assist X (m)','Assist Y (m)','Assist zone','Assist distance to goal (m)'];
@@ -2783,37 +2771,15 @@ function sheetExtra(s,m,d){
       <button class="btn block lg" data-act="sessSave">${s.kind==='sessNew'?'Create and mark attendance':'Save'}</button>`);
     case 'reauth':return sheetWrap('Sign in again',`<div class="note" style="margin-top:0">${esc(DB.user.email)}. Your data on this phone is safe and will sync once you are back in.</div><label>Password<input type="password" data-sbind="password" autocomplete="current-password"></label>${d.err?`<div class="err">${esc(d.err)}</div>`:''}<button class="btn block lg" data-act="reauthGo">Sign in</button>`);
     case 'signout':return sheetWrap('Sign out?',`<p style="margin-top:0">${d.n?`<b>${d.n} change${d.n===1?'':'s'} have not been uploaded yet</b> and would be lost. `:''}Signing out removes the team data from this phone. You can sign in again to get it back.</p><div class="row"><button class="btn sec" data-act="closeSheet">Stay signed in</button><button class="btn bad" data-act="signOutDo">Sign out</button></div>`);
-    case 'join':return sheetWrap('Join with an invite code',`<label>Invite code<input data-sbind="code" value="${esc(d.code||'')}" autocapitalize="characters" autocomplete="off" placeholder="e.g. K7M2QX9P"></label>${d.err?`<div class="err">${esc(d.err)}</div>`:''}<button class="btn block lg" data-act="joinSheet">Join</button>`);
-    case 'invite':return sheetWrap('Invite to '+esc(S.team.name),`<div class="lbl">They join as</div><div class="chips">${[['reviewer','Reviewer (view only)'],['coach','Coach (can edit)']].map(([k,l])=>`<button class="${d.role===k?'on':''}" data-act="invRole" data-val="${k}">${l}</button>`).join('')}</div>
-      <button class="btn block lg" data-act="invMake" ${d.busy?'disabled':''}>${d.busy?'Creating…':'Create invite'}</button>
-      ${d.err?`<div class="err">${esc(d.err)}</div>`:''}
-      ${d.code?`<div class="card" style="margin-top:12px"><div class="lbl">Code (works once, 14 days)</div><div style="font-size:30px;font-weight:800;letter-spacing:.12em">${esc(d.code)}</div><textarea id="sharetext" readonly style="min-height:70px;margin-top:8px">${esc(inviteLink(d.code))}</textarea><div class="row" style="margin-top:8px"><button class="btn" data-act="invCopy">Copy link</button>${navigator.share?`<button class="btn sec" data-act="invShare">Share…</button>`:''}</div></div>`:''}
-      <h2>Open invites</h2>${d.list?(d.list.length?d.list.map(i=>`<div class="kv"><span><b>${esc(i.code)}</b> · ${esc(i.role)}</span><button data-act="invDel" data-val="${esc(i.code)}" style="min-height:36px">Cancel</button></div>`).join(''):'<div class="note">No open invites.</div>'):'<div class="note">Loading…</div>'}`);
-    case 'members':{const list=DB.members[S.team.id]||[];return sheetWrap('Who has access',list.length?list.map(x=>`<div class="kv" style="align-items:center"><span>${esc(x.display_name||x.email||'Someone')}<br><small style="color:var(--mute)">${esc(x.email||'')}</small></span><span style="display:flex;gap:6px;align-items:center"><button data-act="memRole" data-id="${esc(x.user_id)}" data-val="${x.role==='coach'?'reviewer':'coach'}" style="min-height:36px;font-size:13px">${x.role==='coach'?'Coach':'Reviewer'} ⇄</button>${x.user_id!==DB.user.id?`<button data-act="memDel" data-id="${esc(x.user_id)}" style="min-height:36px;color:var(--bad)">Remove</button>`:''}</span></div>`).join('')+`${d.err?`<div class="err">${esc(d.err)}</div>`:''}<div class="note">Tap the role to switch between Coach and Reviewer.</div>`:'<div class="empty">No one yet.</div>')}
     case 'delTeam':{const pro=!!d.pro;return sheetWrap('Remove '+esc(d.name)+'?',`<p style="margin:0 0 10px;line-height:1.45">This removes <b>${esc(d.name)}</b> for everyone who has access, along with its squad, matches, stats and attendance. It cannot be undone from the app.</p>${pro?'':`<label>Type the team name to confirm<input data-sbind="typed" value="${esc(d.typed||'')}" placeholder="${esc(d.name)}" autocomplete="off" autocapitalize="off"></label>`}${d.err?`<div class="err">${esc(d.err)}</div>`:''}<button class="btn block lg" id="delteambtn" data-act="delTeamGo" style="background:var(--bad);color:#fff" ${(!pro&&String(d.typed||'').trim().toLowerCase()!==String(d.name).trim().toLowerCase())||d.busy?'disabled':''}>${d.busy?'Removing…':pro?'Yes, remove this team':'Remove team'}</button><div style="text-align:center;margin-top:8px"><button class="linkbtn" data-act="closeSheet">Keep it</button></div>`)}
     case 'proPick':return sheetWrap('Add professional team',`<label>Club<input data-sbind="q" id="proq" value="${esc(d.q||'')}" placeholder="Start typing, e.g. Celtic" autocomplete="off"></label><div id="proclist">${proPickList(d.q||'')}</div>${d.err?`<div class="err">${esc(d.err)}</div>`:''}<div class="note">Picks the club and fills in the team name, colours, ground and age group "Professional". Their fixtures and results then come in automatically.</div>`);
-    case 'allteams':return sheetWrap('All teams',(d.list?(d.list.length?d.list.map(t=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="font-weight:700;overflow-wrap:anywhere;margin-bottom:6px">${esc(t.name)}</div><div style="display:flex;gap:8px"><button class="btn sec" data-act="atView" data-id="${esc(t.id)}" style="flex:1;min-height:42px;font-size:15px;margin:0">View</button><button class="btn sec" data-act="atCoach" data-id="${esc(t.id)}" style="flex:1;min-height:42px;font-size:15px;margin:0">Coach</button></div></div>`).join(''):'<div class="empty">No teams yet.</div>'):'<div class="note">Loading…</div>')+(d.err?`<div class="err">${esc(d.err)}</div>`:'')+'<div class="note">View: look at everything, read only. Coach: adds you as a coach so you can record and edit.</div>');
+    case 'allteams':return sheetWrap('All teams',(d.list?(d.list.length?d.list.map(t=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="font-weight:700;overflow-wrap:anywhere;margin-bottom:6px">${esc(t.name)}</div><div style="display:flex;gap:8px"><button class="btn sec" data-act="atView" data-id="${esc(t.id)}" style="flex:1;min-height:42px;font-size:15px;margin:0">View</button></div></div>`).join(''):'<div class="empty">No teams yet.</div>'):'<div class="note">Loading…</div>')+(d.err?`<div class="err">${esc(d.err)}</div>`:'')+'<div class="note">View: look at everything, read only. Coach: adds you as a coach so you can record and edit.</div>');
   }
   return '';
 }
 
 /* ---------- extra actions ---------- */
 const EDIT_ACTS=new Set(['delTeamOpen','proFollow','proSquad','mdetOpen','mdetVenue','mdetSave','pinEdit','delMatchAsk','playerNew','playerEdit','playerRestore','playerSave','playerRemove','importOpen','importParse','importAdd','importBack','importDel','matchNew','venue','matchNext','backDetails','cancelMatch','role','reason','restSub','toLive','editLineup','ko','pause','resume','endPeriod','nextPeriod','finishEarly','finish','ev','pick','oppSave','noteSave','evNew','evEdit','evSave','evDel','attSet','attAll','attMins','attEarly','attReason','sessNew','sessEdit','sessSave','sessDel','recMode','recDefault','pinAt','pinOwn','pinPos','pinSkip','pinEdit','pinsSet','pinsDefault','teamTap','capPick','capSet','capSkip','tapPlayer','tapBench','tapDo','tapOn','preset','fmt','prefill','formPick','luSel','luPitch','luPut','luList','injPick']);
-function genCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const b=new Uint8Array(8);(window.crypto||{getRandomValues:a=>{for(let i=0;i<a.length;i++)a[i]=Math.random()*256}}).getRandomValues(b);return Array.from(b,x=>A[x%A.length]).join('')}
-async function syncWait(){for(let i=0;i<30&&SYNC.busy;i++)await new Promise(r=>setTimeout(r,300));SYNC.state='idle';await syncNow(true)}
-async function refreshMembers(){
-  try{DB.members[S.team.id]=await rest('GET','/team_members?team_id=eq.'+encodeURIComponent(S.team.id)+'&deleted=eq.false&select=user_id,role,display_name,email');if(V.sheet&&V.sheet.kind==='members')renderSheet()}
-  catch(e){if(V.sheet&&V.sheet.kind==='members'){V.sheet.d.err=e.message;renderSheet()}}
-}
-async function joinTeamAs(teamId,role){
-  await rest('POST','/team_members?on_conflict=team_id,user_id',{team_id:teamId,user_id:DB.user.id,role,display_name:DB.user.name,email:DB.user.email,deleted:false},'resolution=merge-duplicates,return=minimal');
-  await syncWait();if(DB.teams[teamId])setCur(teamId);
-}
-function copyLink(){
-  const t=inviteLink(V.sheet.d.code),ta=document.getElementById('sharetext');
-  const fb=()=>{if(ta){ta.focus();ta.select()}toast('Touch and hold the link to copy')};
-  try{(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Link copied'),fb)}catch(e){fb()}
-}
 function actExtra(a,ds,el){
   if(a.startsWith('pro')&&proAct(a,ds))return true;
   if(EDIT_ACTS.has(a)&&!canEdit()){toast('View only');return true}
@@ -2829,9 +2795,6 @@ function actExtra(a,ds,el){
     case 'reauthGo':doReauth();return true;
     case 'signOutAsk':V.sheet={kind:'signout',d:{n:CLOUD?pendingCount():0}};renderSheet();return true;
     case 'signOutDo':doSignOut();return true;
-    case 'joinNow':{
-      const c=V.auth.invite.trim();if(!c){V.err='Enter the invite code.';V.errFor='join';render();return true}
-      V.err='';V.errFor='join';joinWithCode(c).then(()=>{V.auth.invite='';V.err='';V.newTeam=false}).catch(e=>{V.err=e.message}).finally(render);return true}
     case 'delTeamOpen':{const t=S.team;if(!t||S.role!=='coach')return true;V.sheet={kind:'delTeam',d:{id:t.id,name:t.name,pro:!!(t.proOn&&t.proTeam)||t.age==='Professional',typed:''}};renderSheet();return true}
     case 'delTeamGo':{
       const d=V.sheet&&V.sheet.d;if(!d||d.busy)return true;
@@ -2860,18 +2823,6 @@ function actExtra(a,ds,el){
       V.sheet={kind:'allteams',d:{list:null}};renderSheet();
       rest('GET','/teams?select=id,name&deleted=eq.false&order=name').then(l=>{if(V.sheet&&V.sheet.kind==='allteams'){V.sheet.d.list=l;renderSheet()}}).catch(e=>{if(V.sheet&&V.sheet.kind==='allteams'){V.sheet.d.list=[];V.sheet.d.err=e.message;renderSheet()}});return true;
     case 'atView':{if(!DB.view.includes(ds.id))DB.view.push(ds.id);V.sheet=null;V.newTeam=false;syncWait().then(()=>{if(DB.teams[ds.id])setCur(ds.id);render()});return true}
-    case 'atCoach':joinTeamAs(ds.id,'coach').then(()=>{V.sheet=null;V.newTeam=false;render()}).catch(e=>{if(V.sheet){V.sheet.d.err=e.message;renderSheet()}});return true;
-    case 'assignMe':joinTeamAs(S.team.id,'coach').then(render).catch(e=>toast(e.message));return true;
-    case 'inviteOpen':if(!adm())return true;V.sheet={kind:'invite',d:{role:'reviewer',code:'',list:null}};renderSheet();loadInvites();return true;
-    case 'invRole':V.sheet.d.role=ds.val;renderSheet();return true;
-    case 'invMake':{const d=V.sheet.d;d.busy=true;d.err='';renderSheet();const code=genCode();
-      rest('POST','/invites',{code,team_id:S.team.id,role:d.role,uses_left:1},'return=minimal').then(()=>{d.code=code;d.busy=false;return loadInvites()}).catch(e=>{d.busy=false;d.err=e.message;renderSheet()});return true}
-    case 'invCopy':copyLink();return true;
-    case 'invShare':try{navigator.share({text:'Join '+S.team.name+' on MyTeamCompanion: '+inviteLink(V.sheet.d.code)+' (code '+V.sheet.d.code+')'}).catch(()=>{})}catch(e){}return true;
-    case 'invDel':rest('DELETE','/invites?code=eq.'+encodeURIComponent(ds.val)).then(loadInvites).catch(e=>toast(e.message));return true;
-    case 'membersOpen':if(!adm())return true;V.sheet={kind:'members',d:{}};renderSheet();refreshMembers();return true;
-    case 'memRole':rest('PATCH','/team_members?team_id=eq.'+encodeURIComponent(S.team.id)+'&user_id=eq.'+encodeURIComponent(ds.id),{role:ds.val},'return=minimal').then(refreshMembers).catch(e=>{V.sheet.d.err=e.message;renderSheet()});return true;
-    case 'memDel':rest('PATCH','/team_members?team_id=eq.'+encodeURIComponent(S.team.id)+'&user_id=eq.'+encodeURIComponent(ds.id),{deleted:true},'return=minimal').then(refreshMembers).catch(e=>{V.sheet.d.err=e.message;renderSheet()});return true;
 
     case 'pstat':V.sheet={kind:'pstat',d:{id:ds.id}};renderSheet();return true;
     case 'settings':V.sheet={kind:'settings',d:{}};renderSheet();return true;
