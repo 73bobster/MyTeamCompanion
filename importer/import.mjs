@@ -11,7 +11,6 @@
 // that you (or a workflow holding a Neon secret) can run.
 import fs from 'node:fs';
 import path from 'node:path';
-import { TOP_FLIGHT } from './top-flight.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).reduce((acc, a, i, all) => {
   if (a.startsWith('--')) acc.push([a.slice(2), all[i + 1] && !all[i + 1].startsWith('--') ? all[i + 1] : true]);
@@ -121,9 +120,10 @@ async function main() {
   }
   const sourceId = args.source || 'bbc';
   const source = await import(`./sources/${sourceId}.mjs`);
-  // --teams is an exact list. Otherwise: every Premier League and Scottish Premiership club, plus any other club a team in the app follows.
+  // --teams is an exact list. Otherwise: the clubs that teams in the app follow (FOLLOWED_TEAMS), or Rangers and Hearts if there are none.
   const split = (v) => String(v || '').split(',').map((s) => s.trim()).filter(Boolean);
-  const teams = args.teams ? [...new Set(split(args.teams))] : [...new Set([...TOP_FLIGHT, ...split(process.env.FOLLOWED_TEAMS)])];
+  const given = split(args.teams || process.env.FOLLOWED_TEAMS);
+  const teams = given.length ? [...new Set(given)] : ['rangers', 'heart-of-midlothian'];
   const now = new Date();
   const ym = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
   const from = args.from || ym(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)));
