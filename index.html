@@ -2495,7 +2495,7 @@ function leaderData(){
   const t=S.team;
   if(!CLOUD||!t||!t.proTeam||!PRO.season||PRO.season.slug!==t.proTeam)return null;
   const ps=activePlayers();
-  const key=PRO.season.at+'|'+(V.comp||'')+'|'+S.matches.length+'|'+ps.map(p=>p.id+p.num+p.name).join(',');
+  const key='lb2|'+PRO.matches.length+'|'+PRO.season.at+'|'+(V.comp||'')+'|'+ps.map(p=>p.id+p.num+p.name).join(',');
   if(LB.key===key)return LB.d;
   const byRef={},evRef={};
   PRO.season.pl.forEach(x=>{(byRef[x.source_ref]=byRef[x.source_ref]||[]).push(x)});
@@ -2505,7 +2505,7 @@ function leaderData(){
   const BK=['1-15','16-30','31-45','46-60','61-75','76-90','90+'];
   const bk=m=>m>90?6:Math.min(5,Math.floor((Math.max(1,m)-1)/15));
   const tf=BK.map(()=>0),ta=BK.map(()=>0);
-  const games=PRO.matches.filter(m=>m.status==='finished'&&!proRecorded(m)&&!(V.comp&&compNorm(m.comp)!==V.comp)).sort((a,b)=>String(a.match_date).localeCompare(String(b.match_date)));
+  const games=PRO.matches.filter(m=>m.status==='finished'&&!(V.comp&&compNorm(m.comp)!==V.comp)).sort((a,b)=>String(a.match_date).localeCompare(String(b.match_date)));
   let n=0;
   for(const m of games){
     const side=proClubSide(m),rows=(byRef[m.source_ref]||[]).filter(x=>x.side===side),evs=evRef[m.source_ref]||[];
