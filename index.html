@@ -480,7 +480,7 @@ main.lvm{padding-top:4px}
 (()=>{
 'use strict';
 /* ---------- helpers ---------- */
-const LOCAL=/[?&]local=1/.test(location.search);
+const LOCAL=false; // no-account demo mode is switched off: this app only follows professional clubs
 const CLOUD=!LOCAL;
 /* one-time rename of saved data: copy touchline-* keys to myteamcompanion-* (old copies are left in place) */
 try{Object.keys(localStorage).filter(k=>k.indexOf('touchline-')===0).forEach(k=>{const n='myteamcompanion-'+k.slice(10);if(localStorage.getItem(n)===null)localStorage.setItem(n,localStorage.getItem(k))})}catch(e){}
@@ -2417,7 +2417,6 @@ function authView(){
   ${up?`<button class="btn block lg" data-act="authLink" ${a.busy?'disabled':''}>${a.busy?'Sending…':'Email me a link'}</button><p class="note">No password needed. We email you a link to confirm your email address, then you are in.</p>`
   :`<button class="btn block lg" data-act="authGo" ${a.busy?'disabled':''}>${a.busy?'One moment…':'Sign in'}</button><div style="text-align:center;margin-top:10px"><button class="linkbtn" data-act="authLink">Email me a sign-in link instead</button></div>`}
   <p class="note">Coaches and reviewers join a team with an invite code from a coach or the app admin. Once you are in, the app keeps working with no signal and syncs when you are back online.</p>
-  <p class="note"><a href="?local=1">Try it on this device with no account</a> (data is not shared or backed up).</p>
   </main>`;
 }
 function noTeamView(){
