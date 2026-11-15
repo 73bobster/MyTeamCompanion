@@ -740,7 +740,7 @@ function proFields(t){
 function teamView(){
   const t=S.team;
   return header('Team',t.name)+`<main>${teamFields(t)}
-  <p class="note">Changes apply to new matches. Colours update the whole app straight away.</p>
+  <p class="note">Changes apply to new matches. Colours are set automatically from the club.</p>
   <h2>Install on your phone</h2>
   <div class="card note" style="margin:0 0 12px">iPhone: open in Safari → Share → <b>Add to Home Screen</b>.<br>Android: Chrome menu → <b>Install app</b> / Add to Home screen.<br>Once installed it opens full-screen and works without signal.</div>
   <h2>Your data</h2>
@@ -2420,7 +2420,6 @@ function noTeamView(){
   <div class="card"><div class="note" style="margin-top:0">Choose an English or Scottish club (top four divisions). Its fixtures, results, line-ups and squad stats are pulled in automatically.</div>
   ${V.err?`<div class="err">${esc(V.err)}</div>`:''}
   <button class="btn block lg" data-act="proPickOpen" ${V.busy?'disabled':''}>${V.busy?'Adding…':'⭐ Add professional team'}</button></div>
-  ${su?`<div style="text-align:center;margin-top:12px"><button class="linkbtn" data-act="allTeamsOpen">Admin: find an existing team</button></div>`:''}
   <div style="text-align:center;margin-top:14px">${first?`<button class="linkbtn" data-act="newTeamBack">‹ Back</button>`:''}<button class="linkbtn" data-act="signOutAsk">Sign out</button></div>
   </main>`;
 }
@@ -2439,14 +2438,12 @@ function teamSwitcher(){
   return `<h2>Your teams</h2>
   ${all.map(x=>`<div class="prow" data-act="switchTeam" data-id="${esc(x.team.id)}" style="cursor:pointer;${x.team.id===DB.cur?'border-color:var(--p);border-width:2px':''}">${crest(x.team,40)}<div class="nm">${esc(x.team.name)}<small>${x.role==='viewer'?'Admin view':'Following'}${x.team.id===DB.cur?' · current':''}</small></div><span style="color:var(--mute)">›</span></div>`).join('')}
   <button class="btn block" data-act="proPickOpen" style="margin-top:10px">⭐ Add professional team</button>
-  ${su?`<div class="row" style="margin:8px 0 0"><button class="btn sec" data-act="allTeamsOpen">Admin: find any team</button></div>`:''}`;
+  `;
 }
 function proTeamFields(t){
   const f=t.proName?clubFind(t.proName):null;
   return `<label>Club<input data-bind="team.proName" data-pro="1" list="proclubs" value="${esc(t.proName||t.proClub||'')}" placeholder="e.g. Rangers" autocomplete="off" autocapitalize="words"></label><datalist id="proclubs">${UK_CLUBS.map(c=>`<option value="${esc(c[0])}">${esc(c[1])}</option>`).join('')}</datalist><div class="note" id="prostat" style="margin-top:4px">${proStatus(t)}</div>
-  <div class="lbl">Team colours — tap a pair, or choose your own</div>
-  <div class="swatches">${PRESETS.map((p,i)=>`<button class="sw" data-act="preset" data-i="${i}" aria-label="${p[0]}" style="background:linear-gradient(135deg,${p[1]} 50%,${p[2]} 50%)"></button>`).join('')}</div>
-  <div class="row"><label>Main colour<input type="color" data-bind="team.primary" value="${esc(t.primary)}"></label><label>Second colour<input type="color" data-bind="team.secondary" value="${esc(t.secondary)}"></label></div>`;
+`;
 }
 function teamView(){
   const t=S.team,ed=canEdit();
@@ -2457,7 +2454,7 @@ function teamView(){
   ${S.role==='viewer'?`<div class="banner" style="margin-top:12px">Admin view: you can see this team but not change it.</div>`:''}
   <h2>Club details</h2>
   <fieldset ${ed?'':'disabled'}>${proTeamFields(t)}</fieldset>
-  ${ed?`<p class="note">Fixtures, results, line-ups and squad stats for this club come from the professional match feed. Colours update the whole app straight away.</p>`:''}
+  ${ed?`<p class="note">Fixtures, results, line-ups and squad stats for this club come from the professional match feed. Colours are set automatically from the club.</p>`:''}
   ${CLOUD&&ed?`<h2>Stop following</h2><div class="note" style="margin-top:0">Removes ${esc(t.name)} from your teams on every device.</div><button class="btn sec block" data-act="delTeamOpen" style="color:var(--bad);border-color:var(--bad)">Stop following…</button>`:''}
   <h2>Install on your phone</h2>
   <div class="card note" style="margin:0 0 12px">iPhone: open in Safari → Share → <b>Add to Home Screen</b>.<br>Android: Chrome menu → <b>Install app</b> / Add to home screen.<br>Once installed it opens full-screen and works without signal.</div>
