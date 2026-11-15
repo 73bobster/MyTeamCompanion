@@ -692,7 +692,7 @@ function syncBadge(){
   if(!m[0])return '';
   return `<span class="sbadge ${m[1]}" data-act="${st==='auth'?'reauth':'syncNow'}" style="cursor:pointer">${m[0]}</span>`;
 }
-const roleName=()=>S.role==='coach'?'Coach':S.role==='reviewer'?'Reviewer':S.role==='viewer'?'Admin view':'';
+const roleName=()=>(S.role==='coach'||S.role==='reviewer')?'Follower':S.role==='viewer'?'Admin view':'';
 const header=(title,sub,right)=>`<header class="top"><div class="hrow">${S.team?crest(S.team,38):''}<div style="flex:1;min-width:0">${S.team?`<div class="tn">${esc(S.team.name)}</div>`:''}<h1>${esc(title)}</h1>${sub?`<div class="sub">${esc(sub)}</div>`:''}</div>${right||''}<span class="bmk">${BRAND_MARK}</span>${syncBadge()}<button class="gear" data-act="settings" aria-label="Settings">⚙️</button></div></header>`;
 
 function tabbar(){
@@ -2412,11 +2412,10 @@ function authView(){
   ${up?`<label>Your name<input data-bind="auth.name" value="${esc(a.name)}" autocomplete="name" placeholder="e.g. Robert Dalziel"></label>`:''}
   <label>Email<input type="email" data-bind="auth.email" value="${esc(a.email)}" autocomplete="email" autocapitalize="off" inputmode="email"></label>
   ${up?'':`<label>Password<input type="password" data-bind="auth.password" value="${esc(a.password)}" autocomplete="current-password"></label>`}
-  <label>Invite code (only if you were given one)<input data-bind="auth.invite" value="${esc(a.invite)}" autocapitalize="characters" autocomplete="off" placeholder="e.g. K7M2QX9P"></label>
   ${a.err?`<div class="err">${esc(a.err)}</div>`:''}
   ${up?`<button class="btn block lg" data-act="authLink" ${a.busy?'disabled':''}>${a.busy?'Sending…':'Email me a link'}</button><p class="note">No password needed. We email you a link to confirm your email address, then you are in.</p>`
   :`<button class="btn block lg" data-act="authGo" ${a.busy?'disabled':''}>${a.busy?'One moment…':'Sign in'}</button><div style="text-align:center;margin-top:10px"><button class="linkbtn" data-act="authLink">Email me a sign-in link instead</button></div>`}
-  <p class="note">Coaches and reviewers join a team with an invite code from a coach or the app admin. Once you are in, the app keeps working with no signal and syncs when you are back online.</p>
+  <p class="note">Sign up to follow professional clubs. Once you are in, the app keeps working with no signal and syncs when you are back online.</p>
   </main>`;
 }
 function noTeamView(){
@@ -2428,11 +2427,7 @@ function noTeamView(){
   <div class="card"><div class="note" style="margin-top:0">Choose an English or Scottish club (top four divisions). Its fixtures, results, line-ups and squad stats are pulled in automatically.</div>
   ${V.err?`<div class="err">${esc(V.err)}</div>`:''}
   <button class="btn block lg" data-act="proPickOpen" ${V.busy?'disabled':''}>${V.busy?'Adding…':'⭐ Add professional team'}</button></div>
-  <h2>Or join with a code</h2>
-  <div class="card"><label style="margin:0 0 10px">Invite code<input data-bind="auth.invite" value="${esc(V.auth.invite)}" autocapitalize="characters" autocomplete="off" placeholder="e.g. K7M2QX9P"></label>
-  ${V.err&&V.errFor==='join'?`<div class="err">${esc(V.err)}</div>`:''}
-  <button class="btn sec block" data-act="joinNow">Join team</button>
-  <div class="note" style="margin-bottom:0">Ask whoever shares the team for a code. It works once and expires after 14 days.${su?` <button class="linkbtn" data-act="allTeamsOpen">Find an existing team instead</button>`:''}</div></div>
+  ${su?`<div style="text-align:center;margin-top:12px"><button class="linkbtn" data-act="allTeamsOpen">Admin: find an existing team</button></div>`:''}
   <div style="text-align:center;margin-top:14px">${first?`<button class="linkbtn" data-act="newTeamBack">‹ Back</button>`:''}<button class="linkbtn" data-act="signOutAsk">Sign out</button></div>
   </main>`;
 }
@@ -2449,9 +2444,9 @@ function teamSwitcher(){
   const all=Object.values(DB.teams).filter(x=>x.team&&x.team.proTeam);
   const su=DB.user&&DB.user.isSuper;
   return `<h2>Your teams</h2>
-  ${all.map(x=>`<div class="prow" data-act="switchTeam" data-id="${esc(x.team.id)}" style="cursor:pointer;${x.team.id===DB.cur?'border-color:var(--p);border-width:2px':''}">${crest(x.team,40)}<div class="nm">${esc(x.team.name)}<small>${x.role==='coach'?'Coach':x.role==='reviewer'?'Reviewer':'Admin view'}${x.team.id===DB.cur?' · current':''}</small></div><span style="color:var(--mute)">›</span></div>`).join('')}
+  ${all.map(x=>`<div class="prow" data-act="switchTeam" data-id="${esc(x.team.id)}" style="cursor:pointer;${x.team.id===DB.cur?'border-color:var(--p);border-width:2px':''}">${crest(x.team,40)}<div class="nm">${esc(x.team.name)}<small>${x.role==='viewer'?'Admin view':'Following'}${x.team.id===DB.cur?' · current':''}</small></div><span style="color:var(--mute)">›</span></div>`).join('')}
   <button class="btn block" data-act="proPickOpen" style="margin-top:10px">⭐ Add professional team</button>
-  <div class="row" style="margin:8px 0 0"><button class="btn sec" data-act="newTeamOpen">Join with a code</button>${su?`<button class="btn sec" data-act="allTeamsOpen">Find any team</button>`:''}</div>`;
+  ${su?`<div class="row" style="margin:8px 0 0"><button class="btn sec" data-act="allTeamsOpen">Admin: find any team</button></div>`:''}`;
 }
 function proTeamFields(t){
   const f=t.proName?clubFind(t.proName):null;
@@ -2466,12 +2461,11 @@ function teamView(){
   return header('Team',t.name)+`<main>
   ${CLOUD?accountCard():`<div class="card"><b>Demo mode</b><div class="note">Everything stays on this device.</div></div>`}
   ${CLOUD?teamSwitcher():''}
-  ${S.role==='viewer'?`<div class="banner" style="margin-top:12px">You are viewing this team as admin. To edit it, assign yourself as a coach.</div><button class="btn block" data-act="assignMe" style="margin-bottom:12px">Assign me as coach of this team</button>`:''}
+  ${S.role==='viewer'?`<div class="banner" style="margin-top:12px">Admin view: you can see this team but not change it.</div>`:''}
   <h2>Club details</h2>
   <fieldset ${ed?'':'disabled'}>${proTeamFields(t)}</fieldset>
   ${ed?`<p class="note">Fixtures, results, line-ups and squad stats for this club come from the professional match feed. Colours update the whole app straight away.</p>`:''}
-  ${CLOUD&&(ed||su)?`<h2>People</h2><div class="row"><button class="btn sec" data-act="inviteOpen">Invite someone</button><button class="btn sec" data-act="membersOpen">Who has access</button></div>`:''}
-  ${CLOUD&&ed?`<h2>Remove this team</h2><div class="note" style="margin-top:0">Takes ${esc(t.name)} off every device and for everyone who has access.</div><button class="btn sec block" data-act="delTeamOpen" style="color:var(--bad);border-color:var(--bad)">Remove team…</button>`:''}
+  ${CLOUD&&ed?`<h2>Stop following</h2><div class="note" style="margin-top:0">Removes ${esc(t.name)} from your teams on every device.</div><button class="btn sec block" data-act="delTeamOpen" style="color:var(--bad);border-color:var(--bad)">Stop following…</button>`:''}
   <h2>Install on your phone</h2>
   <div class="card note" style="margin:0 0 12px">iPhone: open in Safari → Share → <b>Add to Home Screen</b>.<br>Android: Chrome menu → <b>Install app</b> / Add to home screen.<br>Once installed it opens full-screen and works without signal.</div>
   </main>`;
@@ -2751,7 +2745,7 @@ function settingsBody(){
     ['Injuries, joiners and leavers','Open a player in Squad to set a joining date, a leaving date, or mark them as long-term injured. Injured players are left out of the squad by default for new matches. Leavers move to Former players and their number is free to reuse.'],
     ['Stats','The Stats tab is view only. Tap a column heading to sort, and tap again to reverse. Minutes run to the final whistle and include stoppage time.'],
     ['Working without signal','MyTeamCompanion works offline. Changes are kept on your phone and upload on their own when you are back online. The badge at the top shows the sync status.'],
-    ['Who can do what','Admin sees every team. Coaches record and edit their own team. Reviewers can view matches, stats and summaries but not change anything. Invite people from the Team tab.'],
+    ['Who can do what','Everyone is a follower: add the clubs you follow and see their squad, stats and results. One site admin can see everyone\'s followed clubs for support.'],
     ['Install on your phone','iPhone: open in Safari, tap Share, then Add to Home Screen. Android: Chrome menu, then Install app.']
   ].map(([t,b])=>`<details class="help"><summary>${t}</summary><p>${b}</p></details>`).join('');
   const acct=CLOUD&&DB.user
@@ -3253,7 +3247,6 @@ setInterval(()=>{
 let TICK=0;
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){const m=M();if(m&&m.status==='live'&&m.clock.state==='running')lockScreen();const c=$('#clock');if(c&&m)c.textContent=fmtClock(m)}});
 
-(()=>{const q=new URLSearchParams(location.search).get('invite');if(q){V.auth.invite=q.toUpperCase();V.auth.mode='up';if(CLOUD&&DB.user)V.newTeam=true}})();
 render();
 finishLink();
 if(CLOUD&&DB.user)setTimeout(()=>syncNow(),300);
