@@ -439,7 +439,7 @@ main.lvm{padding-top:4px}
 .tc b{min-width:22px;text-align:center;font-size:20px}.tc small{font-size:10px;color:var(--mute)}
 .tc button{width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;font-size:22px;font-weight:800;background:var(--card);border:2px solid var(--line)}
 
-/* season card, shot map */
+/* season card */
 .season{margin:8px 0 12px}
 .formstrip{display:flex;gap:3px;margin:2px 0 10px;overflow:hidden;justify-content:flex-start}
 .formstrip i{flex:none;width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#fff;font-style:normal;font-weight:800;font-size:11px}
@@ -1262,7 +1262,7 @@ function teamBody(m){
   return sheetWrap('Team stats',`<div class="trow th"><div class="tl"></div><div>${esc(S.team.name)}</div><div>${esc(m.opp||'Them')}</div></div>${rows}<div class="note">Tap + each time it happens. Our shots are counted from the player Shot button. − removes the last one.</div><button class="btn block" data-act="closeSheet" style="margin-top:10px">Done</button>`);
 }
 
-/* ---------- competition filter, season card, half splits, shot maps ---------- */
+/* ---------- competition filter, season card, half splits ---------- */
 const compRank=c=>{const x=String(c).toLowerCase();
   if(/champions league/.test(x))return 5;if(/europa/.test(x))return 6;if(/conference/.test(x))return 7;
   if(/league cup|efl cup|carabao|challenge cup/.test(x))return 3;
@@ -1366,21 +1366,6 @@ function halfTable(m){
   return `<div class="note" style="margin:0 0 6px">${esc(S.team.name)} first, then ${esc(m.opp||'the opposition')}.</div><div class="tblwrap"><table class="lt"><thead><tr><th class="nm">Us – Them</th>${cols.map(p=>`<th>${esc(pname(m,p).replace(' half','').replace('1st','1st half').replace('2nd','2nd half'))}</th>`).join('')}<th>Total</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 const SHOT_CLS={'On target':'on','Off target':'off','Blocked':'blk','Hit the post':'post'};
-function shotMapHtml(evs,pid){
-  const taken=evs.filter(e=>(e.t==='shot'||isGF(e))&&e.x!=null&&e.y!=null&&(!pid||e.playerId===pid));
-  const loc=taken.filter(e=>e.y<=PH),own=taken.length-loc.length;
-  const asLoc=evs.filter(e=>isGF(e)&&e.ax!=null&&e.ay!=null&&(!pid||e.assistId===pid));
-  const lines=asLoc.filter(e=>e.ay<=PH&&e.x!=null&&e.y<=PH),asOwn=asLoc.filter(e=>e.ay>PH).length;
-  const nol=evs.filter(e=>(e.t==='shot'||isGF(e))&&e.x==null&&(!pid||e.playerId===pid)).length;
-  if(!loc.length&&!own&&!asLoc.length)return '';
-  const zc={};loc.forEach(e=>{const z=zoneOf(e.x,e.y).name;(zc[z]=zc[z]||{s:0,g:0}).s++;if(isGF(e))zc[z].g++});
-  const zr=Object.entries(zc).sort((a,b)=>b[1].s-a[1].s).map(([z,v])=>`<tr><td class="nm">${esc(z)}</td><td>${v.s}</td><td>${v.g}</td></tr>`).join('');
-  const goals=loc.filter(isGF).length;
-  return `<div class="smap">${PIN_LINES}<svg class="ln" viewBox="0 0 68 52.5" preserveAspectRatio="none">${lines.map(e=>`<line x1="${e.ax}" y1="${e.ay}" x2="${e.x}" y2="${e.y}" vector-effect="non-scaling-stroke"/>`).join('')}</svg>${asLoc.filter(e=>e.ay<=PH).map(e=>`<span class="sd ast" title="Assist" style="${pct(e.ax,e.ay)}"></span>`).join('')}${loc.map(e=>`<span class="sd ${isGF(e)?'goal':SHOT_CLS[e.detail]||'off'}" style="${pct(e.x,e.y)}"></span>`).join('')}</div>
-  <div class="leg"><span><i class="sd goal"></i>Goal</span><span><i class="sd on"></i>On target</span><span><i class="sd off"></i>Off target</span><span><i class="sd blk"></i>Blocked</span><span><i class="sd post"></i>Post</span><span><i class="sd ast"></i>Assist (dashed line to the shot)</span></div>
-  <div class="note" style="margin-top:6px">${loc.length} shot${loc.length===1?'':'s'} pinned in their half (${goals} goal${goals===1?'':'s'})${own?`, ${own} from your own half`:''}${(()=>{return nol?`. ${nol} shot${nol===1?'':'s'} or goal${nol===1?'':'s'} ${nol===1?'has':'have'} no location pinned yet (open Full log &amp; edit and tap 📍 on it)`:''})()}${asOwn?`, ${asOwn} assist${asOwn===1?'':'s'} from deep`:''}.</div>
-  ${zr?`<div class="tblwrap"><table class="lt"><thead><tr><th class="nm">Zone</th><th>Shots</th><th>Goals</th></tr></thead><tbody>${zr}</tbody></table></div>`:''}`;
-}
 
 /* ---------- whiteboard: draw plays, move players, show a player at the side of the pitch ---------- */
 const WB_COLORS=['#ffffff','#ffd400','#ff5a5a','#3da5ff','#111111'];
@@ -1632,7 +1617,6 @@ function summaryView(m){
   <div class="hero"><span class="res">${res}</span><div class="big">${homeAway(m,sc).ls} – ${homeAway(m,sc).rs}</div><div style="font-weight:700">${esc(homeAway(m,sc).l)} v ${esc(homeAway(m,sc).r)}</div><div class="meta">${esc(compLbl(m))} · ${m.venue==='home'?'Home':m.venue==='away'?'Away':'Neutral'}${m.location?' · '+esc(m.location):''}${+m.attendance>0?' · '+(+m.attendance).toLocaleString('en-GB')+' attended':''}${m.referee?' · Ref: '+esc(m.referee):''}</div></div>
   ${m.status==='live'?`<button class="btn block" data-act="continueMatch" style="margin:10px 0">Continue recording</button>`:''}
   <div class="card" style="margin-top:12px"><div class="lbl" style="margin-top:0">Summary</div><p style="margin:4px 0 0;line-height:1.5">${esc(matchSummary(m))}</p></div>
-  ${shotMapHtml(ev)?`<h2>Shot map</h2>${shotMapHtml(ev)}`:''}
   ${sec('Goals',goals.map(e=>row(e,esc(e.how==='Opp own goal'?'Opposition own goal':label(e.playerId))+(e.how&&e.how!=='Opp own goal'?` <span class="stat">${esc(e.how.toLowerCase())}</span>`:'')+(e.assistId?`<br><span class="stat">assist ${esc(label(e.assistId))}</span>`:''))))}
   ${sec('Goals against',against.map(e=>row(e,e.how==='Own goal'?'Own goal — '+esc(label(e.playerId)):esc([e.oppNum?'#'+e.oppNum:'',e.oppName||'Opposition'].filter(Boolean).join(' '))+(e.how?` <span class="stat">${esc(e.how.toLowerCase())}</span>`:''))))}
   ${sec('Substitutions',subs.map(e=>row(e,'↑ '+esc(label(e.onId))+'<br>↓ '+esc(label(e.offId))+(e.reason?` <span class="stat">${esc(e.reason.toLowerCase())}</span>`:''))))}
@@ -2474,14 +2458,11 @@ function statsView(){
   const tot={};STAT_COLS.forEach(c=>{tot[c[1]]=rows.reduce((n,r)=>n+r.s[c[1]],0)});
   const done=S.matches.filter(m=>m.status==='done'&&compOk(m)).length+feedGames();
   const allEv=S.matches.filter(m=>m.status==='done'&&compOk(m)).flatMap(m=>m.events);
-  const pinned=allEv.filter(e=>e.x!=null||e.ax!=null);
-  const pinIds=[...new Set(pinned.flatMap(e=>[e.playerId,e.assistId]).filter(id=>id&&P(id)))];
   const th=(key,txt,cls,title)=>`<th class="sortable ${cls||''} ${k===key?'on':''}" data-act="sortStats" data-v="${key}" title="${esc(title||'Sort')}" aria-sort="${k===key?(dir>0?'ascending':'descending'):'none'}">${txt}${k===key?(dir>0?' ▲':' ▼'):''}</th>`;
   const cell=(c,v)=>c[1]==='mins'?fmtN(v):v;
   return header('Squad stats',done+' match'+(done===1?'':'es')+' from the feed')+`<main>
   ${compBar()}
   ${leaderHtml()}
-  ${pinned.length?`<h2>Shot map</h2><div class="chips small tight scr" style="margin:6px 0"><button class="${V.smp?'':'on'}" data-act="smpSet" data-v="">Whole team</button>${byNum(pinIds).map(id=>`<button class="${V.smp===id?'on':''}" data-act="smpSet" data-v="${id}">${esc(sname(P(id)))}</button>`).join('')}</div>${shotMapHtml(allEv,V.smp||'')||'<div class="note">No pinned shots for this player yet.</div>'}`:''}
   ${rows.length?`<div class="tbl"><table><thead><tr>${th('num','#','n','Sort by number')}${th('name','Name','nm','Sort by name')}${STAT_COLS.map(c=>th(c[1],c[0],'',c[2])).join('')}</tr></thead>
   <tbody>${rows.map(r=>`<tr data-act="pstat" data-id="${r.p.id}"><td class="n">${esc(r.p.num)}</td><td class="nm">${esc(r.p.name)}</td>${STAT_COLS.map(c=>`<td>${cell(c,r.s[c[1]])}</td>`).join('')}</tr>`).join('')}</tbody>
   <tfoot><tr><td class="n"></td><td class="nm">Team</td>${STAT_COLS.map(c=>`<td>${cell(c,tot[c[1]])}</td>`).join('')}</tr></tfoot></table></div>
@@ -2813,7 +2794,6 @@ function settingsBody(){
     ['Recording a match','Start a match from the Match tab, pick the team, then Kick off. Record goals, shots, saves, cards and subs as they happen. Use the strip at the bottom of the screen to switch between Buttons, Drag, Side drag and Tap at any time, even mid-match. Everything you record is saved on your phone straight away.'],
     ['Picking the team','The team screen shows a pitch with your starters in their positions, with subs and Not in squad underneath. Fill it from the last starting team, the last finishing team, or the players who played the fewest minutes last game. Then drag players to change it, or tap a player and tap where they go.'],
     ['Positions','Drag a player to a new spot on the pitch during a match and the move is recorded with the minute (for example LW to CF). In Buttons and Tap formats use Move or Position. A sub takes over the position of the player they replace.'],
-    ['Shot locations','Switch on Pin shot, goal and assist locations on the match screen (or make it the default in Settings). After a shot or goal you tap where it came from on their half of the pitch. There is a bar for anything from your own half, and a shortcut for where the player is standing. Shot maps appear in the match summary and in Stats.'],
     ['Team stats','On the match screen tap Team stats to count corners, fouls conceded, offsides and their shots. The match summary shows these by half.'],
     ['Whiteboard','Open Whiteboard from the match screen or Settings. Drag players around, draw lines and arrows, add the ball and cones, and save a picture to show a player at the side of the pitch. My team puts your starters in position.'],
     ['Injuries, joiners and leavers','Open a player in Squad to set a joining date, a leaving date, or mark them as long-term injured. Injured players are left out of the squad by default for new matches. Leavers move to Former players and their number is free to reuse.'],
@@ -2834,7 +2814,6 @@ function settingsBody(){
   <h2 class="set-sec">Account</h2>${acct}
   ${canEdit()?`<h2 class="set-sec">Recording</h2><div class="lbl">Default format for new matches</div><div class="chips small">${REC_MODES.map(([k,l])=>`<button class="${(recMode(null))===k?'on':''}" data-act="recDefault" data-v="${k}">${l}</button>`).join('')}</div>`:''}
   ${S.team?`<h2 class="set-sec">Your data</h2><div class="note" style="margin-top:0">One row per player per match (who started, where, minutes) and one row per action. Opens in Excel or Numbers.</div><button class="btn sec block" data-act="exportCsv" style="margin-bottom:10px">⬇ Download all matches (CSV)</button>`:''}
-  ${canEdit()?`<div class="lbl">Pin shot, goal and assist locations by default</div><div class="chips small"><button class="${pr.pins?'':'on'}" data-act="pinsDefault" data-v="off">Off</button><button class="${pr.pins?'on':''}" data-act="pinsDefault" data-v="on">On</button></div>`:''}
   <h2 class="set-sec">Help</h2>${help}
   <div class="note">MyTeamCompanion proof of concept · open source (MIT) · <a href="https://github.com/73bobster/MyTeamCompanion" target="_blank" rel="noopener">GitHub</a></div>`);
 }
@@ -2942,8 +2921,7 @@ function actExtra(a,ds,el){
     case 'wbUndo':{const w=wbState();w.strokes.pop();wbSave();wbDraw();return true}
     case 'wbClearAsk':ask({title:'Clear the board?',msg:'This removes every player and drawing.',ok:'Clear',danger:true,fn:'wbClear'});return true;
     case 'wbShare':wbShare();return true;
-    case 'compSet':V.comp=ds.v;V.smp='';render();return true;
-    case 'smpSet':V.smp=ds.v;render();return true;
+    case 'compSet':V.comp=ds.v;render();return true;
     case 'capPick':{V.sheet={kind:'captain',d:{}};renderSheet();return true}
     case 'capSet':case 'capSkip':{const m=M();const ko=V.sheet&&V.sheet.d&&V.sheet.d.ko;if(a==='capSet')m.captain=ds.id;else if(!ko)m.captain='';m.capAsked=true;V.sheet=null;save();render();if(ko)act('ko',{});return true}
     case 'ko':{const m=M();if(m&&!m.captain&&!m.capAsked&&Object.values(m.squad).some(r=>r.role==='starter')){m.capAsked=true;V.sheet={kind:'captain',d:{ko:true}};renderSheet();return true}return false}
