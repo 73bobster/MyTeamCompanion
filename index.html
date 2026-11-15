@@ -544,7 +544,7 @@ let S=DB.teams[DB.cur]||EMPTY();
 let REV=0;
 function save(){REV++;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}if(CLOUD&&typeof schedSync==='function')schedSync()}
 function setCur(id){DB.cur=id;S=DB.teams[id]||EMPTY();V.tab='history';V.matchId=null;V.sess=null;V.sheet=null;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
-const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:'history',step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
+const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:(()=>{try{const t=localStorage.getItem('myteamcompanion-view');return ['history','stats','team'].includes(t)?t:'history'}catch(e){return 'history'}})(),step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
   auth:{mode:'in',email:'',password:'',name:'',err:'',busy:false,sent:false},
   draft:{name:'',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',onPitch:11,periods:2,periodMins:45},err:''};
 const T=()=>(V.newTeam||!S.team)?V.draft:S.team;
@@ -2419,7 +2419,7 @@ function noTeamView(){
   <h2 style="margin-top:0">Pick a professional club</h2>
   <div class="card"><div class="note" style="margin-top:0">Choose an English or Scottish club (top four divisions). Its fixtures, results, line-ups and squad stats are pulled in automatically.</div>
   ${V.err?`<div class="err">${esc(V.err)}</div>`:''}
-  <button class="btn block lg" data-act="proPickOpen" ${V.busy?'disabled':''}>${V.busy?'Adding…':'⭐ Add professional team'}</button></div>
+  <button class="btn block lg" data-act="proPickOpen" ${V.busy?'disabled':''}>${V.busy?'Adding…':'⭐ Add team'}</button></div>
   <div style="text-align:center;margin-top:14px">${first?`<button class="linkbtn" data-act="newTeamBack">‹ Back</button>`:''}<button class="linkbtn" data-act="signOutAsk">Sign out</button></div>
   </main>`;
 }
@@ -2437,7 +2437,7 @@ function teamSwitcher(){
   const su=DB.user&&DB.user.isSuper;
   return `<h2>Your teams</h2>
   ${all.map(x=>`<div class="prow" data-act="switchTeam" data-id="${esc(x.team.id)}" style="cursor:pointer;${x.team.id===DB.cur?'border-color:var(--p);border-width:2px':''}">${crest(x.team,40)}<div class="nm">${esc(x.team.name)}<small>${x.role==='viewer'?'Admin view':'Following'}${x.team.id===DB.cur?' · current':''}</small></div><span style="color:var(--mute)">›</span></div>`).join('')}
-  <button class="btn block" data-act="proPickOpen" style="margin-top:10px">⭐ Add professional team</button>
+  <button class="btn block" data-act="proPickOpen" style="margin-top:10px">⭐ Add team</button>
   `;
 }
 function proTeamFields(t){
@@ -2484,8 +2484,88 @@ function statsView(){
   <tfoot><tr><td class="n"></td><td class="nm">Team</td>${STAT_COLS.map(c=>`<td>${cell(c,tot[c[1]])}</td>`).join('')}</tr></tfoot></table></div>
   <div class="note">Tap a column heading to sort, and tap it again to reverse. Sel = in the matchday squad · MP = played · St = started · Min = minutes played (to the final whistle, stoppage included) · 🅰 assists · 🎯 shots · 🔑 key passes · 🧤 saves · 🛡 key defending. Only finished matches count. Figures come from the club's published match feed (appearances, minutes, goals, assists and cards); shots, key passes, saves and defending are not in the feed. Tap a player for the full picture.</div>`
   :`<div class="empty"><b>No players yet</b>The squad fills in from the club's published line-ups. Open Results to refresh the feed.</div>`}
+  ${leaderHtml()}
   ${pinned.length?`<h2>Shot map</h2><div class="chips small tight scr" style="margin:6px 0"><button class="${V.smp?'':'on'}" data-act="smpSet" data-v="">Whole team</button>${byNum(pinIds).map(id=>`<button class="${V.smp===id?'on':''}" data-act="smpSet" data-v="${id}">${esc(sname(P(id)))}</button>`).join('')}</div>${shotMapHtml(allEv,V.smp||'')||'<div class="note">No pinned shots for this player yet.</div>'}`:''}
   </main>`;
+}
+
+/* ---------- leaderboards from the feed: scorers, assisters, minutes, defenders and more ---------- */
+const LB={key:'',d:null};
+function leaderData(){
+  const t=S.team;
+  if(!CLOUD||!t||!t.proTeam||!PRO.season||PRO.season.slug!==t.proTeam)return null;
+  const ps=activePlayers();
+  const key=PRO.season.at+'|'+(V.comp||'')+'|'+S.matches.length+'|'+ps.map(p=>p.id+p.num+p.name).join(',');
+  if(LB.key===key)return LB.d;
+  const byRef={},evRef={};
+  PRO.season.pl.forEach(x=>{(byRef[x.source_ref]=byRef[x.source_ref]||[]).push(x)});
+  PRO.season.ev.forEach(x=>{(evRef[x.source_ref]=evRef[x.source_ref]||[]).push(x)});
+  const m0={};const get=id=>m0[id]||(m0[id]={id,mins:0,apps:0,starts:0,goals:0,pens:0,assists:0,ga:0,cs:0,yc:0,rc:0,pc:{}});
+  const team={p:0,w:0,d:0,l:0,gf:0,ga:0,cs:0,home:{w:0,d:0,l:0},away:{w:0,d:0,l:0},form:[]};
+  const BK=['1-15','16-30','31-45','46-60','61-75','76-90','90+'];
+  const bk=m=>m>90?6:Math.min(5,Math.floor((Math.max(1,m)-1)/15));
+  const tf=BK.map(()=>0),ta=BK.map(()=>0);
+  const games=PRO.matches.filter(m=>m.status==='finished'&&!proRecorded(m)&&!(V.comp&&compNorm(m.comp)!==V.comp)).sort((a,b)=>String(a.match_date).localeCompare(String(b.match_date)));
+  let n=0;
+  for(const m of games){
+    const side=proClubSide(m),rows=(byRef[m.source_ref]||[]).filter(x=>x.side===side),evs=evRef[m.source_ref]||[];
+    if(!rows.length&&!evs.length)continue;
+    n++;
+    const gf=side==='home'?m.home_goals:m.away_goals,ga=side==='home'?m.away_goals:m.home_goals;
+    if(gf!=null&&ga!=null){team.p++;team.gf+=gf;team.ga+=ga;if(!ga)team.cs++;const r=gf>ga?'w':gf<ga?'l':'d';team[r]++;team[side][r]++;team.form.push(r.toUpperCase())}
+    const against=evs.filter(e=>e.side!==side).map(e=>e.minute||0);
+    evs.forEach(e=>{const b=bk(e.minute||0);if(e.side===side)tf[b]++;else ta[b]++});
+    rows.forEach(x=>{
+      const id=feedPid(x.name,x.num,ps);if(!id)return;const o=get(id);
+      const on=x.starter||x.on_min!=null;if(!on)return;
+      const st=x.starter?0:x.on_min;
+      const red=(x.red||[])[0];
+      const en=x.off_min!=null?x.off_min:red!=null?red:999;
+      const mins=Math.max(0,Math.min(en,120)-st);
+      o.apps++;if(x.starter)o.starts++;o.mins+=x.off_min!=null||red!=null?Math.max(0,Math.min(en,120)-st):Math.max(0,90-st);
+      const conc=against.filter(g=>g>st&&g<=en).length;o.ga+=conc;if(mins>=60&&!conc)o.cs++;
+      o.yc+=(x.yellow||[]).length;o.rc+=(x.red||[]).length;
+      if(x.pos&&x.pos!=='Substitute')o.pc[x.pos]=(o.pc[x.pos]||0)+1;
+    });
+    evs.filter(e=>e.side===side&&e.type==='goal').forEach(e=>{
+      const a=feedPid(e.player,null,ps);if(a){get(a).goals++;if(/pen/i.test(e.detail||''))get(a).pens++}
+      if(e.assist){const b=feedPid(e.assist,null,ps);if(b)get(b).assists++}
+    });
+  }
+  const list=Object.values(m0).map(o=>{const pl=ps.find(p=>p.id===o.id);const pos=Object.keys(o.pc).sort((a,b)=>o.pc[b]-o.pc[a])[0]||(pl&&pl.pos)||'';o.name=pl?pl.name:'';o.num=pl?pl.num:'';o.pos=pos;o.grp=/goalkeeper|keeper|^GK$/i.test(pos)?'GK':/defend|back|^DEF$/i.test(pos)?'DEF':'';return o}).filter(o=>o.name);
+  LB.key=key;LB.d={n,list,team,BK,tf,ta};return LB.d;
+}
+function leaderHtml(){
+  const d=leaderData();if(!d||!d.n||!d.list.length)return '';
+  const per=(m,n)=>n?Math.round(m/n):'—';
+  const tbl=(title,note,head,rows)=>rows.length?`<h2>${title}</h2><div class="tbl"><table><thead><tr><th class="nm">Player</th>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td class="nm">${esc(r[0])}</td>${r.slice(1).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${note?`<div class="note" style="margin-top:4px">${note}</div>`:''}`:'';
+  const L=d.list;
+  const scorers=L.filter(o=>o.goals>0).sort((a,b)=>b.goals-a.goals||(a.mins/a.goals)-(b.mins/b.goals)).slice(0,10).map(o=>[o.name,o.goals,per(o.mins,o.goals),o.assists,o.pens||'–',fmtN(o.mins)]);
+  const assisters=L.filter(o=>o.assists>0).sort((a,b)=>b.assists-a.assists||(a.mins/a.assists)-(b.mins/b.assists)).slice(0,10).map(o=>[o.name,o.assists,per(o.mins,o.assists),o.goals,fmtN(o.mins)]);
+  const minutes=L.filter(o=>o.mins>0).sort((a,b)=>b.mins-a.mins).slice(0,10).map(o=>[o.name,fmtN(o.mins),o.apps,o.starts,Math.round(o.mins/Math.max(1,d.n))]);
+  const defAll=L.filter(o=>o.grp==='DEF');
+  let defs=defAll.filter(o=>o.mins>=270);if(defs.length<5)defs=defAll.filter(o=>o.mins>=90);
+  defs=defs.sort((a,b)=>a.ga/a.mins-b.ga/b.mins||b.mins-a.mins).slice(0,5).map(o=>[o.name,fmtN(o.mins),o.ga,o.ga?Math.round(o.mins/o.ga):'—',o.cs]);
+  const gks=L.filter(o=>o.grp==='GK'&&o.mins>=90).sort((a,b)=>b.mins-a.mins).slice(0,3).map(o=>[o.name,fmtN(o.mins),o.ga,o.ga?Math.round(o.mins/o.ga):'—',o.cs]);
+  const cards=L.filter(o=>o.yc||o.rc).sort((a,b)=>b.rc-a.rc||b.yc-a.yc||b.mins-a.mins).slice(0,5).map(o=>[o.name,o.yc,o.rc,o.yc+o.rc?Math.round(o.mins/(o.yc+o.rc)):'—']);
+  const t=d.team;
+  const form=t.form.slice(-6).map(r=>`<b style="display:inline-block;min-width:22px;text-align:center;padding:2px 0;margin-right:3px;border-radius:5px;color:#fff;background:${r==='W'?'#1e8f4e':r==='L'?'#c0392b':'#8a8f98'}">${r}</b>`).join('');
+  const rec=`<h2>Team record</h2><div class="card" style="padding:4px 14px">
+   <div class="kv"><span>Played · W · D · L</span><b>${t.p} · ${t.w} · ${t.d} · ${t.l}</b></div>
+   <div class="kv"><span>Goals for · against</span><b>${t.gf} · ${t.ga}${t.p?` (${(t.gf/t.p).toFixed(1)} · ${(t.ga/t.p).toFixed(1)} a game)`:''}</b></div>
+   <div class="kv"><span>Clean sheets</span><b>${t.cs}</b></div>
+   <div class="kv"><span>Home · away (W-D-L)</span><b>${t.home.w}-${t.home.d}-${t.home.l} · ${t.away.w}-${t.away.d}-${t.away.l}</b></div>
+   <div class="kv"><span>Last ${Math.min(6,t.form.length)}</span><span>${form}</span></div></div>`;
+  const timing=`<h2>When the goals come</h2><div class="tbl"><table><thead><tr><th class="nm">Minutes</th>${d.BK.map(b=>`<th>${b}</th>`).join('')}</tr></thead><tbody><tr><td class="nm">Scored</td>${d.tf.map(x=>`<td>${x}</td>`).join('')}</tr><tr><td class="nm">Conceded</td>${d.ta.map(x=>`<td>${x}</td>`).join('')}</tr></tbody></table></div>`;
+  return `<h2 style="margin-top:22px">Leaders</h2><div class="note" style="margin-top:0">From ${d.n} match${d.n===1?'':'es'} with published line-ups. Minutes are to the final whistle, stoppage not included.</div>
+  ${rec}
+  ${tbl('Top scorers','Mins/G = minutes played for each goal. Pens = penalties scored.',['⚽','Mins/G','🅰','Pens','Min'],scorers)}
+  ${tbl('Top assisters','Mins/A = minutes played for each assist.',['🅰','Mins/A','⚽','Min'],assisters)}
+  ${tbl('Most minutes','Mins/Gm = average minutes per team match.',['Min','Apps','St','Mins/Gm'],minutes)}
+  ${tbl('Top 5 defenders','Ranked by goals conceded per minute while on the pitch (defenders with at least 270 minutes, or 90 if fewer qualify). Mins/GA = minutes per goal against. CS = clean sheets (played 60+ minutes, none conceded).',['Min','GA','Mins/GA','CS'],defs)}
+  ${tbl('Goalkeepers','',['Min','GA','Mins/GA','CS'],gks)}
+  ${tbl('Discipline','Mins/Card = minutes per card.',['🟨','🟥','Mins/Card'],cards)}
+  ${timing}`;
 }
 function pstatBody(pid){
   const p=P(pid);const s=stats(pid),a=attStats(pid);
@@ -2769,7 +2849,7 @@ function sheetExtra(s,m,d){
     case 'reauth':return sheetWrap('Sign in again',`<div class="note" style="margin-top:0">${esc(DB.user.email)}. Your data on this phone is safe and will sync once you are back in.</div><label>Password<input type="password" data-sbind="password" autocomplete="current-password"></label>${d.err?`<div class="err">${esc(d.err)}</div>`:''}<button class="btn block lg" data-act="reauthGo">Sign in</button>`);
     case 'signout':return sheetWrap('Sign out?',`<p style="margin-top:0">${d.n?`<b>${d.n} change${d.n===1?'':'s'} have not been uploaded yet</b> and would be lost. `:''}Signing out removes the team data from this phone. You can sign in again to get it back.</p><div class="row"><button class="btn sec" data-act="closeSheet">Stay signed in</button><button class="btn bad" data-act="signOutDo">Sign out</button></div>`);
     case 'delTeam':{const pro=!!d.pro;return sheetWrap('Remove '+esc(d.name)+'?',`<p style="margin:0 0 10px;line-height:1.45">This removes <b>${esc(d.name)}</b> for everyone who has access, along with its squad, matches, stats and attendance. It cannot be undone from the app.</p>${pro?'':`<label>Type the team name to confirm<input data-sbind="typed" value="${esc(d.typed||'')}" placeholder="${esc(d.name)}" autocomplete="off" autocapitalize="off"></label>`}${d.err?`<div class="err">${esc(d.err)}</div>`:''}<button class="btn block lg" id="delteambtn" data-act="delTeamGo" style="background:var(--bad);color:#fff" ${(!pro&&String(d.typed||'').trim().toLowerCase()!==String(d.name).trim().toLowerCase())||d.busy?'disabled':''}>${d.busy?'Removing…':pro?'Yes, remove this team':'Remove team'}</button><div style="text-align:center;margin-top:8px"><button class="linkbtn" data-act="closeSheet">Keep it</button></div>`)}
-    case 'proPick':return sheetWrap('Add professional team',`<label>Club<input data-sbind="q" id="proq" value="${esc(d.q||'')}" placeholder="Start typing, e.g. Celtic" autocomplete="off"></label><div id="proclist">${proPickList(d.q||'')}</div>${d.err?`<div class="err">${esc(d.err)}</div>`:''}<div class="note">Picks the club and fills in the team name, colours, ground and age group "Professional". Their fixtures and results then come in automatically.</div>`);
+    case 'proPick':return sheetWrap('Add team',`<label>Club<input data-sbind="q" id="proq" value="${esc(d.q||'')}" placeholder="Start typing, e.g. Celtic" autocomplete="off"></label><div id="proclist">${proPickList(d.q||'')}</div>${d.err?`<div class="err">${esc(d.err)}</div>`:''}<div class="note">Picks the club and fills in the team name, colours, ground and age group "Professional". Their fixtures and results then come in automatically.</div>`);
     case 'allteams':return sheetWrap('All teams',(d.list?(d.list.length?d.list.map(t=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="font-weight:700;overflow-wrap:anywhere;margin-bottom:6px">${esc(t.name)}</div><div style="display:flex;gap:8px"><button class="btn sec" data-act="atView" data-id="${esc(t.id)}" style="flex:1;min-height:42px;font-size:15px;margin:0">View</button></div></div>`).join(''):'<div class="empty">No teams yet.</div>'):'<div class="note">Loading…</div>')+(d.err?`<div class="err">${esc(d.err)}</div>`:'')+'<div class="note">View: look at everything, read only. Coach: adds you as a coach so you can record and edit.</div>');
   }
   return '';
@@ -3064,7 +3144,7 @@ const proClubSide=m=>{const ck=clubKey(S.team&&S.team.proClub);return (clubKey(m
 async function proSeasonLoad(force){
   const t=S.team;if(!CLOUD||!DB.user||!t||!t.proTeam||PRO.sbusy)return;
   const fin=PRO.matches.filter(m=>m.status==='finished');if(!fin.length)return;
-  const sig=fin.length+'|'+t.proTeam;
+  const sig=fin.length+'|'+t.proTeam+'|v2';
   if(!force&&PRO.season&&PRO.season.sig===sig&&Date.now()-PRO.season.at<3600000)return;
   PRO.sbusy=true;
   try{
@@ -3072,7 +3152,7 @@ async function proSeasonLoad(force){
     for(let i=0;i<fin.length;i+=25){
       const refs=fin.slice(i,i+25).map(m=>'"'+m.source_ref+'"').join(',');const f='source_ref=in.('+encodeURIComponent(refs)+')';
       pl.push(...(await rest('GET','/pro_match_players?select=source_ref,side,num,name,pos,starter,on_min,off_min,yellow,red&'+f+'&limit=5000')||[]));
-      ev.push(...(await rest('GET','/pro_match_events?select=source_ref,type,side,minute,player,assist&type=eq.goal&'+f+'&limit=5000')||[]));
+      ev.push(...(await rest('GET','/pro_match_events?select=source_ref,type,side,minute,player,assist,detail&type=in.(goal,own_goal)&'+f+'&limit=5000')||[]));
     }
     PRO.season={sig,at:Date.now(),slug:t.proTeam,pl,ev};proSave();
   }catch(e){PRO.err=navigator.onLine?'Could not load season stats ('+e.message+').':''}
@@ -3100,7 +3180,7 @@ function feedMap(){
       if(on){o.played++;if(x.starter)o.started++;const st=x.starter?0:x.on_min,en=x.off_min!=null?x.off_min:90;o.mins+=Math.max(0,Math.min(en,120)-st)}
       o.yc+=(x.yellow||[]).length;o.rc+=(x.red||[]).length;
     });
-    (evRef[m.source_ref]||[]).filter(e=>e.side===side).forEach(e=>{
+    (evRef[m.source_ref]||[]).filter(e=>e.side===side&&e.type==='goal').forEach(e=>{
       const a=feedPid(e.player,null,ps);if(a)get(a).goals++;
       if(e.assist){const b=feedPid(e.assist,null,ps);if(b)get(b).assists++}
     });
@@ -3162,7 +3242,7 @@ function render(){
   if(CLOUD&&DB.user&&S&&S.team&&!S.team.proTeam&&SYNC.state!=='syncing'){ // this app only shows professional clubs
     const pid=Object.keys(DB.teams).find(k=>DB.teams[k]&&DB.teams[k].team&&DB.teams[k].team.proTeam);
     if(pid)setCur(pid);else S=EMPTY()}
-  bd.view=(CLOUD&&!DB.user)?'auth':(!S.team||V.newTeam)?'noteam':'app';bd.tab=V.tab;
+  bd.view=(CLOUD&&!DB.user)?'auth':(!S.team||V.newTeam)?'noteam':'app';bd.tab=V.tab;try{localStorage.setItem('myteamcompanion-view',V.tab==='pro'?'history':V.tab)}catch(e){}
   if(CLOUD&&!DB.user){app.innerHTML=authView();renderSheet();return}
   if(!S.team||V.newTeam){app.innerHTML=CLOUD?noTeamView():onboard();renderSheet();return}
   let body='';
