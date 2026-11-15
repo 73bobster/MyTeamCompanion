@@ -140,6 +140,7 @@ a{color:var(--p);font-weight:600}
 .tbl th.n{background:#f7f9f8}
 .tbl td.nm,.tbl th.nm{position:sticky;left:42px;background:#fff;text-align:left;font-weight:600;z-index:1;box-shadow:2px 0 3px rgba(0,0,0,.05);min-width:104px}
 .tbl th.nm{background:#f7f9f8}
+.tbl.lb td.nm,.tbl.lb th.nm{left:0}
 .tbl tr[data-act]{cursor:pointer}
 .tbl tfoot td{font-weight:800;background:#f7f9f8}
 .pitchwrap{margin:6px 0 10px}
@@ -2545,7 +2546,7 @@ function leaderHtml(){
     if(sv&&sv.c>=0&&sv.c<rows[0].length){rows=rows.slice().sort((x,y)=>{const a=x[sv.c],b=y[sv.c];const c=(sv.c===0||(withPos&&sv.c===1))?String(a).localeCompare(String(b)):num(a)-num(b);return c*sv.d})}
     const th=(c,h,cls)=>`<th class="sortable ${cls||''} ${sv&&sv.c===c?'on':''}" data-act="lbSort" data-t="${esc(title)}" data-c="${c}" aria-sort="${sv&&sv.c===c?(sv.d>0?'ascending':'descending'):'none'}">${h}${sv&&sv.c===c?(sv.d>0?' ▲':' ▼'):''}</th>`;
     const cols=['Player'].concat(head);
-    return `<h2>${title}</h2><div class="tbl"><table><thead><tr>${cols.map((h,i)=>th(i,h,i===0?'nm':'')).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td class="nm">${esc(r[0])}</td>${r.slice(1).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="note" style="margin-top:4px">${note?note+' ':''}Tap a heading to sort, and again to reverse.</div>`};
+    return `<h2>${title}</h2><div class="tbl lb"><table><thead><tr>${cols.map((h,i)=>th(i,h,i===0?'nm':'')).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td class="nm">${esc(r[0])}</td>${r.slice(1).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="note" style="margin-top:4px">${note?note+' ':''}Tap a heading to sort, and again to reverse.</div>`};
   const POSN=p=>{const x=String(p||'').toLowerCase();return /goalkeeper|keeper|^gk$/.test(x)?'GK':/wing back/.test(x)?'WB':/defensive mid/.test(x)?'DM':/attacking mid/.test(x)?'AM':/midfield/.test(x)?'MID':/defend|^def$/.test(x)?'DEF':/striker|forward|winger|attack/.test(x)?'FWD':'–'};
   const L=d.list;
   const scorers=L.filter(o=>o.goals>0).sort((a,b)=>b.goals-a.goals||(a.mins/a.goals)-(b.mins/b.goals)).slice(0,10).map(o=>[o.name,o.goals,per(o.mins,o.goals),o.assists,o.pens||'–',fmtN(o.mins)]);
@@ -2564,7 +2565,7 @@ function leaderHtml(){
    <div class="kv"><span>Clean sheets</span><b>${t.cs}</b></div>
    <div class="kv"><span>Home · away (W-D-L)</span><b>${t.home.w}-${t.home.d}-${t.home.l} · ${t.away.w}-${t.away.d}-${t.away.l}</b></div>
    <div class="kv"><span>Last ${Math.min(6,t.form.length)}</span><span>${form}</span></div></div>`;
-  const timing=`<h2>When the goals come</h2><div class="tbl"><table><thead><tr><th class="nm">Minutes</th>${d.BK.map(b=>`<th>${b}</th>`).join('')}</tr></thead><tbody><tr><td class="nm">Scored</td>${d.tf.map(x=>`<td>${x}</td>`).join('')}</tr><tr><td class="nm">Conceded</td>${d.ta.map(x=>`<td>${x}</td>`).join('')}</tr></tbody></table></div>`;
+  const timing=`<h2>When the goals come</h2><div class="tbl lb"><table><thead><tr><th class="nm">Minutes</th>${d.BK.map(b=>`<th>${b}</th>`).join('')}</tr></thead><tbody><tr><td class="nm">Scored</td>${d.tf.map(x=>`<td>${x}</td>`).join('')}</tr><tr><td class="nm">Conceded</td>${d.ta.map(x=>`<td>${x}</td>`).join('')}</tr></tbody></table></div>`;
   return `<h2 style="margin-top:22px">Leaders</h2><div class="note" style="margin-top:0">From ${d.n} match${d.n===1?'':'es'} with published line-ups. Minutes are to the final whistle, stoppage not included.</div>
   ${rec}
   ${tbl('Top scorers','Mins/G = minutes played for each goal. Pens = penalties scored.',['Goals','Mins/G','Assists','Pens','Min'],scorers)}
