@@ -2479,13 +2479,13 @@ function statsView(){
   const cell=(c,v)=>c[1]==='mins'?fmtN(v):v;
   return header('Squad stats',done+' match'+(done===1?'':'es')+' from the feed')+`<main>
   ${compBar()}
+  ${leaderHtml()}
+  ${pinned.length?`<h2>Shot map</h2><div class="chips small tight scr" style="margin:6px 0"><button class="${V.smp?'':'on'}" data-act="smpSet" data-v="">Whole team</button>${byNum(pinIds).map(id=>`<button class="${V.smp===id?'on':''}" data-act="smpSet" data-v="${id}">${esc(sname(P(id)))}</button>`).join('')}</div>${shotMapHtml(allEv,V.smp||'')||'<div class="note">No pinned shots for this player yet.</div>'}`:''}
   ${rows.length?`<div class="tbl"><table><thead><tr>${th('num','#','n','Sort by number')}${th('name','Name','nm','Sort by name')}${STAT_COLS.map(c=>th(c[1],c[0],'',c[2])).join('')}</tr></thead>
   <tbody>${rows.map(r=>`<tr data-act="pstat" data-id="${r.p.id}"><td class="n">${esc(r.p.num)}</td><td class="nm">${esc(r.p.name)}</td>${STAT_COLS.map(c=>`<td>${cell(c,r.s[c[1]])}</td>`).join('')}</tr>`).join('')}</tbody>
   <tfoot><tr><td class="n"></td><td class="nm">Team</td>${STAT_COLS.map(c=>`<td>${cell(c,tot[c[1]])}</td>`).join('')}</tr></tfoot></table></div>
   <div class="note">Tap a column heading to sort, and tap it again to reverse. Sel = in the matchday squad · MP = played · St = started · Min = minutes played (to the final whistle, stoppage included) · 🅰 assists · 🎯 shots · 🔑 key passes · 🧤 saves · 🛡 key defending. Only finished matches count. Figures come from the club's published match feed (appearances, minutes, goals, assists and cards); shots, key passes, saves and defending are not in the feed. Tap a player for the full picture.</div>`
   :`<div class="empty"><b>No players yet</b>The squad fills in from the club's published line-ups. Open Results to refresh the feed.</div>`}
-  ${leaderHtml()}
-  ${pinned.length?`<h2>Shot map</h2><div class="chips small tight scr" style="margin:6px 0"><button class="${V.smp?'':'on'}" data-act="smpSet" data-v="">Whole team</button>${byNum(pinIds).map(id=>`<button class="${V.smp===id?'on':''}" data-act="smpSet" data-v="${id}">${esc(sname(P(id)))}</button>`).join('')}</div>${shotMapHtml(allEv,V.smp||'')||'<div class="note">No pinned shots for this player yet.</div>'}`:''}
   </main>`;
 }
 
@@ -2538,16 +2538,24 @@ function leaderData(){
 function leaderHtml(){
   const d=leaderData();if(!d||!d.n||!d.list.length)return '';
   const per=(m,n)=>n?Math.round(m/n):'—';
-  const tbl=(title,note,head,rows)=>rows.length?`<h2>${title}</h2><div class="tbl"><table><thead><tr><th class="nm">Player</th>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td class="nm">${esc(r[0])}</td>${r.slice(1).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${note?`<div class="note" style="margin-top:4px">${note}</div>`:''}`:'';
+  const num=v=>{const x=parseFloat(String(v).replace(/,/g,''));return isNaN(x)?-1:x};
+  const tbl=(title,note,head,rows,withPos)=>{
+    if(!rows.length)return '';
+    const sv=(V.lbs||{})[title];
+    if(sv&&sv.c>=0&&sv.c<rows[0].length){rows=rows.slice().sort((x,y)=>{const a=x[sv.c],b=y[sv.c];const c=(sv.c===0||(withPos&&sv.c===1))?String(a).localeCompare(String(b)):num(a)-num(b);return c*sv.d})}
+    const th=(c,h,cls)=>`<th class="sortable ${cls||''} ${sv&&sv.c===c?'on':''}" data-act="lbSort" data-t="${esc(title)}" data-c="${c}" aria-sort="${sv&&sv.c===c?(sv.d>0?'ascending':'descending'):'none'}">${h}${sv&&sv.c===c?(sv.d>0?' ▲':' ▼'):''}</th>`;
+    const cols=['Player'].concat(head);
+    return `<h2>${title}</h2><div class="tbl"><table><thead><tr>${cols.map((h,i)=>th(i,h,i===0?'nm':'')).join('')}</tr></thead><tbody>${rows.map(r=>`<tr><td class="nm">${esc(r[0])}</td>${r.slice(1).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div><div class="note" style="margin-top:4px">${note?note+' ':''}Tap a heading to sort, and again to reverse.</div>`};
+  const POSN=p=>{const x=String(p||'').toLowerCase();return /goalkeeper|keeper|^gk$/.test(x)?'GK':/wing back/.test(x)?'WB':/defensive mid/.test(x)?'DM':/attacking mid/.test(x)?'AM':/midfield/.test(x)?'MID':/defend|^def$/.test(x)?'DEF':/striker|forward|winger|attack/.test(x)?'FWD':'–'};
   const L=d.list;
   const scorers=L.filter(o=>o.goals>0).sort((a,b)=>b.goals-a.goals||(a.mins/a.goals)-(b.mins/b.goals)).slice(0,10).map(o=>[o.name,o.goals,per(o.mins,o.goals),o.assists,o.pens||'–',fmtN(o.mins)]);
   const assisters=L.filter(o=>o.assists>0).sort((a,b)=>b.assists-a.assists||(a.mins/a.assists)-(b.mins/b.assists)).slice(0,10).map(o=>[o.name,o.assists,per(o.mins,o.assists),o.goals,fmtN(o.mins)]);
-  const minutes=L.filter(o=>o.mins>0).sort((a,b)=>b.mins-a.mins).slice(0,10).map(o=>[o.name,fmtN(o.mins),o.apps,o.starts,Math.round(o.mins/Math.max(1,d.n))]);
+  const minutes=L.filter(o=>o.mins>0).sort((a,b)=>b.mins-a.mins).slice(0,10).map(o=>[o.name,POSN(o.pos),fmtN(o.mins),o.apps,o.starts,Math.round(o.mins/Math.max(1,d.n))]);
   const defAll=L.filter(o=>o.grp==='DEF');
   let defs=defAll.filter(o=>o.mins>=270);if(defs.length<5)defs=defAll.filter(o=>o.mins>=90);
   defs=defs.sort((a,b)=>a.ga/a.mins-b.ga/b.mins||b.mins-a.mins).slice(0,5).map(o=>[o.name,fmtN(o.mins),o.ga,o.ga?Math.round(o.mins/o.ga):'—',o.cs]);
   const gks=L.filter(o=>o.grp==='GK'&&o.mins>=90).sort((a,b)=>b.mins-a.mins).slice(0,3).map(o=>[o.name,fmtN(o.mins),o.ga,o.ga?Math.round(o.mins/o.ga):'—',o.cs]);
-  const cards=L.filter(o=>o.yc||o.rc).sort((a,b)=>b.rc-a.rc||b.yc-a.yc||b.mins-a.mins).slice(0,5).map(o=>[o.name,o.yc,o.rc,o.yc+o.rc?Math.round(o.mins/(o.yc+o.rc)):'—']);
+  const cards=L.filter(o=>o.yc||o.rc).sort((a,b)=>b.rc-a.rc||b.yc-a.yc||b.mins-a.mins).slice(0,5).map(o=>[o.name,POSN(o.pos),o.yc,o.rc,o.yc+o.rc?Math.round(o.mins/(o.yc+o.rc)):'—']);
   const t=d.team;
   const form=t.form.slice(-6).map(r=>`<b style="display:inline-block;min-width:22px;text-align:center;padding:2px 0;margin-right:3px;border-radius:5px;color:#fff;background:${r==='W'?'#1e8f4e':r==='L'?'#c0392b':'#8a8f98'}">${r}</b>`).join('');
   const rec=`<h2>Team record</h2><div class="card" style="padding:4px 14px">
@@ -2561,10 +2569,10 @@ function leaderHtml(){
   ${rec}
   ${tbl('Top scorers','Mins/G = minutes played for each goal. Pens = penalties scored.',['⚽','Mins/G','🅰','Pens','Min'],scorers)}
   ${tbl('Top assisters','Mins/A = minutes played for each assist.',['🅰','Mins/A','⚽','Min'],assisters)}
-  ${tbl('Most minutes','Mins/Gm = average minutes per team match.',['Min','Apps','St','Mins/Gm'],minutes)}
+  ${tbl('Most minutes','Mins/Gm = average minutes per team match.',['Pos','Min','Apps','St','Mins/Gm'],minutes,true)}
   ${tbl('Top 5 defenders','Ranked by goals conceded per minute while on the pitch (defenders with at least 270 minutes, or 90 if fewer qualify). Mins/GA = minutes per goal against. CS = clean sheets (played 60+ minutes, none conceded).',['Min','GA','Mins/GA','CS'],defs)}
   ${tbl('Goalkeepers','',['Min','GA','Mins/GA','CS'],gks)}
-  ${tbl('Discipline','Mins/Card = minutes per card.',['🟨','🟥','Mins/Card'],cards)}
+  ${tbl('Discipline','Mins/Card = minutes per card.',['Pos','🟨','🟥','Mins/Card'],cards,true)}
   ${timing}`;
 }
 function pstatBody(pid){
@@ -2959,6 +2967,7 @@ function actExtra(a,ds,el){
     case 'luPitch':{if(!V.lsel)return true;const pt=window.LASTPT?pitchPt(LASTPT.x,LASTPT.y):null;lineupDrop(V.lsel,'lu-pitch',null,pt);return true}
     case 'luPut':{if(!V.lsel)return true;lineupDrop(V.lsel,ds.to==='bench'?'lu-bench':'lu-out');return true}
     case 'luList':V.luList=!V.luList;render();return true;
+    case 'lbSort':{const t=ds.t,c=+ds.c;V.lbs=V.lbs||{};const cur=V.lbs[t];V.lbs[t]=cur&&cur.c===c?{c,d:-cur.d}:{c,d:(c===0||(t==='Most minutes'||t==='Discipline')&&c===1)?1:-1};render();return true}
     case 'sortStats':{const dd=k=>(k==='num'||k==='name')?1:-1;if(V.sort===ds.v)V.sortDir=-(V.sortDir||dd(ds.v));else{V.sort=ds.v;V.sortDir=dd(ds.v)}render();return true}
 
     /* attendance */
