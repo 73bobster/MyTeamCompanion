@@ -2567,12 +2567,12 @@ function leaderHtml(){
   const timing=`<h2>When the goals come</h2><div class="tbl"><table><thead><tr><th class="nm">Minutes</th>${d.BK.map(b=>`<th>${b}</th>`).join('')}</tr></thead><tbody><tr><td class="nm">Scored</td>${d.tf.map(x=>`<td>${x}</td>`).join('')}</tr><tr><td class="nm">Conceded</td>${d.ta.map(x=>`<td>${x}</td>`).join('')}</tr></tbody></table></div>`;
   return `<h2 style="margin-top:22px">Leaders</h2><div class="note" style="margin-top:0">From ${d.n} match${d.n===1?'':'es'} with published line-ups. Minutes are to the final whistle, stoppage not included.</div>
   ${rec}
-  ${tbl('Top scorers','Mins/G = minutes played for each goal. Pens = penalties scored.',['⚽','Mins/G','🅰','Pens','Min'],scorers)}
-  ${tbl('Top assisters','Mins/A = minutes played for each assist.',['🅰','Mins/A','⚽','Min'],assisters)}
+  ${tbl('Top scorers','Mins/G = minutes played for each goal. Pens = penalties scored.',['Goals','Mins/G','Assists','Pens','Min'],scorers)}
+  ${tbl('Top assisters','Mins/A = minutes played for each assist.',['Assists','Mins/A','Goals','Min'],assisters)}
   ${tbl('Most minutes','Mins/Gm = average minutes per team match.',['Pos','Min','Apps','St','Mins/Gm'],minutes,true)}
   ${tbl('Top 5 defenders','Ranked by goals conceded per minute while on the pitch (defenders with at least 270 minutes, or 90 if fewer qualify). Mins/GA = minutes per goal against. CS = clean sheets (played 60+ minutes, none conceded).',['Min','GA','Mins/GA','CS'],defs)}
   ${tbl('Goalkeepers','',['Min','GA','Mins/GA','CS'],gks)}
-  ${tbl('Discipline','Mins/Card = minutes per card.',['Pos','🟨','🟥','Mins/Card'],cards,true)}
+  ${tbl('Discipline','Mins/Card = minutes per card.',['Pos','Yellow','Red','Mins/Card'],cards,true)}
   ${timing}`;
 }
 function pstatBody(pid){
