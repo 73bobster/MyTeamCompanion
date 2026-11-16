@@ -1269,7 +1269,7 @@ const compRank=c=>{const x=String(c).toLowerCase();
   if(/\bcup\b/.test(x)&&!/friendly/.test(x))return 2;
   if(/premier|premiership|championship|league|division|\bliga\b|serie/.test(x))return 1;
   return 9};
-const compNorm=c=>String(c||'').split(' - ')[0].replace(/\s*\(.*\)\s*$/,'').replace(/^UEFA\s+/i,'').trim();
+const compNorm=c=>{const n=String(c||'').split(' - ')[0].replace(/\s*\(.*\)\s*$/,'').replace(/^UEFA\s+/i,'').trim();return n==='League Cup'?'Scottish League Cup':n};
 const proComps=()=>{try{return(CLOUD&&S.team&&S.team.proTeam)?PRO.matches.filter(m=>m.status==='finished'&&m.comp&&!proRecorded(m)).map(m=>compNorm(m.comp)):[]}catch(e){return []}};
 const compsOf=()=>[...new Set([...S.matches.filter(m=>m.status==='done'&&m.comp).map(m=>compNorm(m.comp)),...proComps()])].sort((a,b)=>compRank(a)-compRank(b)||a.localeCompare(b));
 const compOk=m=>!V.comp||compNorm(m.comp)===V.comp;
