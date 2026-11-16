@@ -130,6 +130,7 @@ textarea.fb{width:100%;min-height:110px;font:inherit;padding:10px;border:1px sol
 .chart{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}
 .chart h3{margin:0 0 6px;font-size:14px}
 .chart svg{display:block;width:100%;height:auto}
+@media (min-width:700px){.chart svg{max-width:400px}.chart .sv{font-size:inherit}}
 .cl{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin-top:4px}
 .cl i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .hb{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
@@ -2355,6 +2356,7 @@ function teamView(){
   ${CLOUD?accountCard():`<div class="card"><b>Demo mode</b><div class="note">Everything stays on this device.</div></div>`}
   ${CLOUD?teamSwitcher():''}
   ${S.role==='viewer'?`<div class="banner" style="margin-top:12px">Admin view: you can see this team but not change it.</div>`:''}
+  ${CLOUD?`<h2>Feedback</h2><div class="note" style="margin-top:0">Tell us what works, what does not, or what you would like changed.</div><button class="btn block" data-act="fbOpen">💬 Send feedback</button>`:''}
   ${CLOUD&&ed&&!isGuest()?`<h2>Stop following</h2><div class="note" style="margin-top:0">Removes ${esc(t.name)} from your teams on every device.</div><button class="btn sec block" data-act="delTeamOpen" style="color:var(--bad);border-color:var(--bad)">Stop following…</button>`:''}
   ${showInstall()?`<h2>Install on your phone</h2>
   <div class="card note" style="margin:0 0 12px">iPhone: open in Safari → Share → <b>Add to Home Screen</b>.<br>Android: Chrome menu → <b>Install app</b> / Add to home screen.<br>Once installed it opens full-screen and works without signal.</div>`:''}
@@ -2785,7 +2787,6 @@ function settingsBody(){
   <div class="lbl">Font</div><div class="chips small">${fonts.map(([k,l])=>`<button class="${fo===k?'on':''}" data-act="setPref" data-k="font" data-v="${k}" style="font-family:${FONTS[k]}">${l}</button>`).join('')}</div>
   <div class="lbl">App colour</div><div class="swatches"><button class="chip-btn ${!ac?'on':''}" data-act="setAccent" data-i="" style="min-height:44px;border-radius:22px;padding:0 14px;font-weight:600;border:2px solid var(--line);background:var(--card);${!ac?'border-color:var(--p);':''}">Team colours</button>${acc}</div>
   <h2 class="set-sec">Account</h2>${acct}
-  <h2 class="set-sec">Feedback</h2><div class="note" style="margin-top:0">Tell us what works, what does not, or what you would like changed.</div><button class="btn block" data-act="fbOpen">💬 Send feedback</button>
   <h2 class="set-sec">Help</h2>${help}
   <div class="note">MyTeamCompanion proof of concept · open source (MIT) · <a href="https://github.com/73bobster/MyTeamCompanion" target="_blank" rel="noopener">GitHub</a></div>`);
 }
