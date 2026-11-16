@@ -125,6 +125,8 @@ header.top .bmk{display:inline-flex;width:40px;flex:none;opacity:.95}header.top 
 .hero .pens{font-weight:700;margin:2px 0 6px}
 a.prow{text-decoration:none;color:inherit}
 .tabs button{min-width:0;padding-left:2px;padding-right:2px}
+.stars{display:flex;gap:6px;margin:4px 0 8px}.stars button{background:none;border:0;font-size:34px;line-height:1;min-height:44px;min-width:44px;padding:0;color:#c7ccd4}.stars button.on{color:#f5a623}
+textarea.fb{width:100%;min-height:110px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff);color:var(--ink)}
 .chart{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}
 .chart h3{margin:0 0 6px;font-size:14px}
 .chart svg{display:block;width:100%;height:auto}
@@ -2061,6 +2063,19 @@ async function finishLink(){
   }catch(e){a.err=e.message}
   a.busy=false;render();
 }
+async function sendFeedback(){
+  const d=V.sheet&&V.sheet.d;if(!d||d.busy)return;
+  const msg=String(d.msg||'').trim();
+  if(!d.rating&&!msg){d.err='Give a star rating or write a few words first.';renderSheet();return}
+  if(!CLOUD||!DB.user){d.err='Sign in or continue as guest to send feedback.';renderSheet();return}
+  d.busy=true;d.err='';renderSheet();
+  try{
+    const t=S&&S.team;
+    await rest('POST','/feedback',{email:DB.user.guest?(String(d.reply||'').trim()||null):(DB.user.email||null),name:DB.user.guest?'Guest':(DB.user.name||null),rating:d.rating||null,kind:d.kind||null,message:msg||null,club:(t&&t.proClub)||null,tab:d.from||null,guest:!!DB.user.guest,app_version:(typeof CACHE_NAME!=='undefined'?CACHE_NAME:'')||'web',device:(navigator.userAgent||'').slice(0,200)},'return=minimal');
+    d.sent=true;
+  }catch(e){d.err=navigator.onLine?'Could not send it ('+e.message+'). Your text is kept, try again.':'You are offline. Your text is kept, try again when you have signal.'}
+  d.busy=false;renderSheet();
+}
 async function doReauth(){
   const d=V.sheet.d;d.err='';
   try{await authCall('/sign-in/email',{email:DB.user.email,password:d.password});await getJwt(true).catch(()=>{throw new Error(BLOCKED)});V.sheet=null;SYNC.state='idle';await syncNow(true)}
@@ -2336,7 +2351,7 @@ function proTeamFields(t){
 function teamView(){
   const t=S.team,ed=canEdit();
   const su=CLOUD&&DB.user&&DB.user.isSuper;
-  return header('Team',t.name)+`<main>
+  return header('Teams',t.name)+`<main>
   ${CLOUD?accountCard():`<div class="card"><b>Demo mode</b><div class="note">Everything stays on this device.</div></div>`}
   ${CLOUD?teamSwitcher():''}
   ${S.role==='viewer'?`<div class="banner" style="margin-top:12px">Admin view: you can see this team but not change it.</div>`:''}
@@ -2770,6 +2785,7 @@ function settingsBody(){
   <div class="lbl">Font</div><div class="chips small">${fonts.map(([k,l])=>`<button class="${fo===k?'on':''}" data-act="setPref" data-k="font" data-v="${k}" style="font-family:${FONTS[k]}">${l}</button>`).join('')}</div>
   <div class="lbl">App colour</div><div class="swatches"><button class="chip-btn ${!ac?'on':''}" data-act="setAccent" data-i="" style="min-height:44px;border-radius:22px;padding:0 14px;font-weight:600;border:2px solid var(--line);background:var(--card);${!ac?'border-color:var(--p);':''}">Team colours</button>${acc}</div>
   <h2 class="set-sec">Account</h2>${acct}
+  <h2 class="set-sec">Feedback</h2><div class="note" style="margin-top:0">Tell us what works, what does not, or what you would like changed.</div><button class="btn block" data-act="fbOpen">💬 Send feedback</button>
   <h2 class="set-sec">Help</h2>${help}
   <div class="note">MyTeamCompanion proof of concept · open source (MIT) · <a href="https://github.com/73bobster/MyTeamCompanion" target="_blank" rel="noopener">GitHub</a></div>`);
 }
@@ -2784,6 +2800,19 @@ function sheetExtra(s,m,d){
       const pos=posMap(m);const occ={};Object.keys(pos).forEach(id=>{occ[pos[id]]=id});
       return sheetWrap(esc(label(d.pid))+' — now '+esc(pos[d.pid]||'?')+'. Moves to?',POS_ROWS.map(r=>`<div class="posrow">${r.map(l=>{const o=occ[l]&&occ[l]!==d.pid?occ[l]:'';return `<button class="${pos[d.pid]===l?'on':''} ${o?'occ':''}" data-act="pick" data-val="${l}">${l}${o?`<small>#${esc(P(o).num)}</small>`:''}</button>`}).join('')}</div>`).join('')+`<div class="hint">Moving onto someone swaps the two players.</div>`,true)}
     case 'settings':return settingsBody();
+    case 'feedback':{
+      if(d.sent)return sheetWrap('Feedback',`<div style="text-align:center;padding:18px 0"><div style="font-size:42px">🙏</div><h2 style="margin:6px 0">Thank you</h2><p class="note" style="margin:0 0 14px">Your feedback has been sent.</p><button class="btn block" data-act="closeSheet">Close</button></div>`);
+      const kinds=[['problem','Something is wrong'],['change','A change I would like'],['like','Something I like'],['other','Other']];
+      return sheetWrap('Send feedback',`<div class="lbl">How would you rate MyTeamCompanion?</div>
+      <div class="stars" role="radiogroup" aria-label="Rating">${[1,2,3,4,5].map(n=>`<button class="${d.rating>=n?'on':''}" data-act="fbRate" data-v="${n}" role="radio" aria-checked="${d.rating===n}" aria-label="${n} star${n===1?'':'s'}">★</button>`).join('')}</div>
+      <div class="lbl">What is it about?</div><div class="chips small">${kinds.map(([k,l])=>`<button class="${d.kind===k?'on':''}" data-act="fbKind" data-v="${k}">${l}</button>`).join('')}</div>
+      <div class="lbl" style="margin-top:10px">Tell us more</div>
+      <textarea class="fb" data-sbind="msg" maxlength="4000" placeholder="${d.kind==='problem'?'What happened, and what did you expect? Which screen were you on?':d.kind==='change'?'What would you change or add, and why?':'Your comments'}">${esc(d.msg||'')}</textarea>
+      ${DB.user&&DB.user.guest?`<label>Email, only if you would like a reply (optional)<input type="email" data-sbind="reply" value="${esc(d.reply||'')}" autocomplete="email" inputmode="email"></label>`:''}
+      ${d.err?`<div class="err">${esc(d.err)}</div>`:''}
+      <button class="btn block lg" data-act="fbSend" ${d.busy?'disabled':''}>${d.busy?'Sending…':'Send feedback'}</button>
+      <div class="note">We record the club and screen you were on, and your account, so we can follow up.</div>`);
+    }
     case 'sessNew':case 'sessEdit':
       return sheetWrap(s.kind==='sessNew'?'New session':'Session details',`<div class="chips">${SESS_KINDS.map(([k,l])=>`<button class="${d.kind===k?'on':''}" data-act="sessKind" data-val="${k}">${l}</button>`).join('')}</div>
       <label>Title (optional)<input data-sbind="title" value="${esc(d.title||'')}" placeholder="e.g. Tuesday training, Christmas party" autocomplete="off"></label>
@@ -2849,6 +2878,10 @@ function actExtra(a,ds,el){
 
     case 'pstat':V.sheet={kind:'pstat',d:{id:ds.id}};renderSheet();return true;
     case 'settings':V.sheet={kind:'settings',d:{}};renderSheet();return true;
+    case 'fbOpen':V.sheet={kind:'feedback',d:{rating:0,kind:'',msg:'',reply:'',err:'',busy:false,sent:false,from:V.tab==='pro'?'history':V.tab}};renderSheet();return true;
+    case 'fbRate':{const d=V.sheet.d;d.rating=+ds.v===d.rating?0:+ds.v;renderSheet();return true}
+    case 'fbKind':{const d=V.sheet.d;d.kind=d.kind===ds.v?'':ds.v;renderSheet();return true}
+    case 'fbSend':sendFeedback();return true;
     case 'pinAt':{const m=pinM();const e=pinEv(m,V.sheet.d.id);const L=window.LASTPT;if(!e||!L)return true;const r=el.getBoundingClientRect();const cl=(v,mx)=>+Math.max(0,Math.min(mx,v)).toFixed(1);pinSave(m,e,cl((L.x-r.left)/r.width*PW,PW),cl((L.y-r.top)/r.height*PH,PH));return true}
     case 'pinOwn':{const m=pinM();pinSave(m,pinEv(m,V.sheet.d.id),34,60);return true}
     case 'pinPos':{const m=pinM();const e=pinEv(m,V.sheet.d.id);const pid=V.sheet.d.step==='assist'?e.assistId:e.playerId;const xy=POSITIONS[posMap(m)[pid]];if(xy){const X=xy[0]/100*PW,Y=xy[1]/100*105;if(Y>PH)pinSave(m,e,34,60);else pinSave(m,e,+X.toFixed(1),+Y.toFixed(1))}return true}
