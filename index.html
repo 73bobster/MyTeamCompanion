@@ -2478,6 +2478,25 @@ function leaderData(){
   LB.key=key;LB.d={n,list,team,BK,tf,ta};return LB.d;
 }
 
+/* three-letter codes for opponents: always unique within the set, and the same club always gets the same code */
+const ABBR_FIX={'st mirren':'STM','st johnstone':'STJ','heart of midlothian':'HEA','hearts':'HEA','dundee united':'DUU','dundee':'DUN','manchester city':'MCI','manchester united':'MUN','nottingham forest':'NFO','brighton and hove albion':'BHA','tottenham hotspur':'TOT','newcastle united':'NEW','borussia dortmund':'BVB','west ham united':'WHU','crystal palace':'CRY','leeds united':'LEE','leicester city':'LEI','west bromwich albion':'WBA','sheffield united':'SHU','sheffield wednesday':'SHW'};
+function abbrMap(names){
+  const uniq=[...new Set(names.map(n=>clubKey(String(n||'').replace(/^st\.? /i,'st '))))].filter(Boolean).sort();
+  const out={},used=new Set();
+  const cands=k=>{
+    const w=k.split(' '),flat=k.replace(/ /g,'').toUpperCase(),c=[];
+    if(ABBR_FIX[k])c.push(ABBR_FIX[k]);
+    c.push(flat.slice(0,3));
+    if(w.length>1){c.push((w[0][0]+w[1].slice(0,2)).toUpperCase());c.push(w.map(x=>x[0]).join('').toUpperCase().slice(0,3).padEnd(3,flat[1]||'X'))}
+    for(let i=1;i<flat.length-1;i++)c.push(flat[0]+flat[i]+flat[i+1]);
+    for(let i=1;i<flat.length;i++)for(let j=i+1;j<flat.length;j++)c.push(flat[0]+flat[i]+flat[j]);
+    return c.filter(x=>x.length===3);
+  };
+  /* fixed codes first, so they are never displaced */
+  uniq.filter(k=>ABBR_FIX[k]).forEach(k=>{out[k]=ABBR_FIX[k];used.add(ABBR_FIX[k])});
+  uniq.filter(k=>!ABBR_FIX[k]).forEach(k=>{let a=cands(k).find(x=>!used.has(x));if(!a){let n=1;while(used.has((k.slice(0,2)+n).toUpperCase()))n++;a=(k.slice(0,2)+n).toUpperCase()}out[k]=a;used.add(a)});
+  return k=>out[clubKey(String(k||'').replace(/^st\.? /i,'st '))]||'';
+}
 function chartsHtml(d,L){
   const t=d.team;if(!t.p)return '';
   const G='#1e8f4e',R='#c0392b',N='#8a8f98',B='#2563eb';
@@ -2488,6 +2507,7 @@ function chartsHtml(d,L){
    <div style="flex:1;font-size:14px"><div><i style="background:${G};display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px"></i>Won <b>${t.w}</b></div><div><i style="background:${N};display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px"></i>Drawn <b>${t.d}</b></div><div><i style="background:${R};display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px"></i>Lost <b>${t.l}</b></div>
    <div class="note" style="margin:8px 0 0">Home ${t.home.w}-${t.home.d}-${t.home.l} · Away ${t.away.w}-${t.away.d}-${t.away.l}</div></div></div></div>`;
   /* goals in each match: one stacked bar per match (scored below, conceded above), goal numbers inside, goal difference above */
+  const ab=abbrMap(t.games.map(g=>g.opp));
   const gs=t.games.slice(-16),mx=Math.max(2,...gs.map(g=>g.gf+g.ga)),W=340,H=190,top=26,bot=26,step=(W-12)/gs.length,bw=Math.min(24,step-4),uh=(H-top-bot)/mx;
   const bars=gs.map((g,i)=>{
     const x=6+i*step+(step-bw)/2,cx=x+bw/2,hs=g.gf*uh,hc=g.ga*uh,y0=H-bot,gd=g.gf-g.ga;
@@ -2496,7 +2516,7 @@ function chartsHtml(d,L){
      +`<rect x="${x.toFixed(1)}" y="${(y0-hs-hc).toFixed(1)}" width="${bw.toFixed(1)}" height="${hc.toFixed(1)}" fill="${R}"/>`
      +num(g.gf,hs,y0-hs)+num(g.ga,hc,y0-hs-hc)
      +`<text x="${cx.toFixed(1)}" y="${(y0-hs-hc-5).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="800" fill="${gd>0?G:gd<0?R:N}">${gd>0?'+'+gd:gd<0?'\u2212'+(-gd):'0'}</text>`
-     +`<text x="${cx.toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="8.5" fill="#6b7280">${esc(String(g.opp).replace(/[^A-Za-z ]/g,'').trim().slice(0,3).toUpperCase())}</text>`}).join('');
+     +`<text x="${cx.toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="8.5" fill="#6b7280">${esc(ab(g.opp))}</text>`}).join('');
   const perGame=`<div class="chart"><h3>Goals in each match${gs.length<t.games.length?' (last '+gs.length+')':''}</h3><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Goals scored and conceded in each match, with goal difference"><line x1="4" x2="${W-4}" y1="${H-bot}" y2="${H-bot}" stroke="#d9dde3"/>${bars}</svg><div class="cl"><span><i style="background:${G}"></i>Scored</span><span><i style="background:${R}"></i>Conceded</span></div><div class="note" style="margin:4px 0 0">The figure above each bar is the goal difference: + for a win, 0 for a draw, − for a defeat. Oldest match on the left, opponent shown underneath.</div></div>`;
   /* when goals come */
   const m2=Math.max(1,...d.tf,...d.ta),w2=320,h2=120,sp=(w2-16)/d.BK.length,b2=sp/2-4;
