@@ -1,6 +1,6 @@
 // MyTeamCompanion PoC service worker: cache the app shell so it opens with no signal.
-const CACHE = 'myteamcompanion-poc-v86';
-const ASSETS = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'favicon.svg', 'favicon-32.png', 'icon-maskable-512.png', 'fonts/inter-400.woff2', 'fonts/inter-600.woff2', 'fonts/manrope-800.woff2'];
+const CACHE = 'myteamcompanion-poc-v87';
+const ASSETS = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'favicon.ico', 'apple-touch-icon.png', 'brand/logo.png', 'brand/emblem.png', 'favicon-32.png', 'icon-maskable-512.png', 'fonts/inter-400.woff2', 'fonts/inter-600.woff2', 'fonts/manrope-800.woff2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

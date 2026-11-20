@@ -3,28 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14243a">
+<meta name="theme-color" content="#071d49">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MyTeamCompanion">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>MyTeamCompanion</title>
 <style>
 @font-face{font-family:Inter;font-weight:400;font-style:normal;font-display:swap;src:url(fonts/inter-400.woff2) format("woff2")}
 @font-face{font-family:Inter;font-weight:600;font-style:normal;font-display:swap;src:url(fonts/inter-600.woff2) format("woff2")}
 @font-face{font-family:Manrope;font-weight:800;font-style:normal;font-display:swap;src:url(fonts/manrope-800.woff2) format("woff2")}
-:root{--font:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--head:Manrope,Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--brand-blue:#315fea;--brand-pink:#f05a8d;--p:#14243a;--pt:#fff;--s:#f05a8d;--act:#315fea;--st:#111;--bg:#eef2f7;--card:#fff;--ink:#14243a;--mute:#5b6b82;--line:#dbe2ec;--bad:#c0392b;--ok:#1e8f4e;--warn:#b7791f}
+:root{--font:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--head:Manrope,Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--brand-blue:#071d49;--brand-pink:#ef176d;--p:#071d49;--pt:#fff;--s:#ef176d;--act:#071d49;--st:#111;--bg:#eef2f7;--card:#fff;--ink:#071d49;--mute:#5b6b82;--line:#dbe2ec;--bad:#c0392b;--ok:#1e8f4e;--warn:#b7791f}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 var(--font)}
 #app{max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 header.top{background:var(--p);color:var(--pt);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;position:sticky;top:0;z-index:5;border-bottom:4px solid var(--s)}
 h1,h2{font-family:var(--head);font-weight:800}
 header.top h1{margin:0;font-size:20px;line-height:1.2}
-.bm{display:inline-flex;width:58px;flex:none}.bm svg{width:100%;height:auto;display:block}
+header.top.brandhead{background:#fff;color:#071d49;text-align:center;padding-bottom:10px}header.top.brandhead .logo{display:block;width:min(100%,440px);height:auto;margin:0 auto}header.top.brandhead .sub{opacity:1;margin-top:2px;font-weight:700;color:#071d49}
 header.top .sub{font-size:13px;opacity:.85}
 header.top .tn{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header.top .hrow{display:flex;align-items:center;gap:12px}
@@ -42,7 +42,7 @@ button[disabled]{opacity:.45}
 .btn{background:var(--act,var(--p));color:var(--pt);font-weight:700}
 a{color:var(--brand-blue)}
 h3,.score,header.top .tn{font-family:var(--head);font-weight:800}
-header.top .bmk{display:inline-flex;width:40px;flex:none;opacity:.95}header.top .bmk svg{width:100%;height:auto;display:block}
+header.top .bmk{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;flex:none;background:#fff;border-radius:10px;padding:3px}header.top .bmk img{height:100%;width:auto;max-width:100%;display:block;object-fit:contain}
 .btn.sec{background:#fff;color:var(--ink);border:2px solid var(--line);font-weight:600}
 .btn.bad{background:var(--bad);color:#fff;font-weight:700}
 .btn.block{display:block;width:100%}
@@ -579,7 +579,7 @@ function save(){REV++;if(DB.user&&DB.user.guest){saveGuest();return}try{localSto
 function setCur(id){DB.cur=id;S=DB.teams[id]||EMPTY();V.tab='home';V.matchId=null;V.sess=null;V.sheet=null;if(DB.user&&DB.user.guest){saveGuest();return}try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
 const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:(()=>{try{const fresh=!sessionStorage.getItem('myteamcompanion-open');sessionStorage.setItem('myteamcompanion-open','1');if(fresh)return 'home';const t=localStorage.getItem('myteamcompanion-view');return ['home','history','stats','tables','links','team'].includes(t)?t:'home'}catch(e){return 'home'}})(),step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
   auth:{mode:'in',email:'',password:'',name:'',err:'',busy:false,sent:false},
-  draft:{name:'',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',onPitch:11,periods:2,periodMins:45},err:''};
+  draft:{name:'',age:'',ground:'',primary:'#071d49',secondary:'#ef176d',onPitch:11,periods:2,periodMins:45},err:''};
 const T=()=>(V.newTeam||!S.team)?V.draft:S.team;
 const canEdit=()=>S.role==='coach';
 const M=()=>S.matches.find(m=>m.id===S.activeId)||null;
@@ -708,11 +708,11 @@ function attStats(pid){
 
 /* ---------- theme ---------- */
 function applyTheme(){
-  const t=T();let p=t.primary||'#14243a',s=t.secondary||'#f05a8d';
+  const t=T();let p=t.primary||'#071d49',s=t.secondary||'#ef176d';if(String(p).toLowerCase()==='#14243a')p='#071d49';if(String(s).toLowerCase()==='#f05a8d')s='#ef176d';
   const ac=DB.prefs&&DB.prefs.accent;if(ac&&ac.length===2){p=ac[0];s=ac[1]}
   try{const th=(DB.prefs&&DB.prefs.theme)||'light';const dark=th==='dark'||(th==='auto'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';document.documentElement.style.setProperty('--font',FONTS[(DB.prefs&&DB.prefs.font)||'system']||FONTS.system)}catch(e){}
   const r=document.documentElement.style;
-  r.setProperty('--act',(ac&&ac.length===2)||(t.primary&&t.primary.toLowerCase()!=='#14243a')?p:'#315fea');r.setProperty('--p',p);r.setProperty('--pt',textOn(p));r.setProperty('--s',s);r.setProperty('--st',textOn(s));
+  r.setProperty('--act',(ac&&ac.length===2)||(t.primary&&t.primary.toLowerCase()!=='#071d49')?p:'#071d49');r.setProperty('--p',p);r.setProperty('--pt',textOn(p));r.setProperty('--s',s);r.setProperty('--st',textOn(s));
   const mt=document.querySelector('meta[name=theme-color]');if(mt)mt.setAttribute('content',p);
 }
 const crest=(t,px)=>`<span class="crest" style="width:${px}px;height:${px}px;font-size:${Math.round(px*.38)}px${t.primary?`;background:${t.primary};color:${textOn(t.primary)};border-color:${t.secondary||'#fff'}`:''}">${esc((t.name||'T').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</span>`;
@@ -1730,7 +1730,7 @@ const CONFIRMS={
   delMatch(id){const m=S.matches.find(x=>x.id===id);if(!m)return;S.matches=S.matches.filter(x=>x.id!==id);if(S.activeId===id)S.activeId=null;if(V.matchId===id)V.matchId=null;if(V.logId===id)V.logId=null;save();V.sheet=null;toast('Match deleted');render()},
   cancelMatch(){const m=M();S.matches=S.matches.filter(x=>x.id!==m.id);S.activeId=null;save();V.sheet=null;V.err='';render()},
   playerRemove(id){const p=P(id);if(p){p.left=true;if(!p.end)p.end=todayStr()}save();V.sheet=null;render()},
-  reset(){DB=blankDB();DB.user={id:'local',email:'',name:'You',isSuper:true};S=EMPTY();V.tab='history';V.matchId=null;V.draft={name:'',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',onPitch:11,periods:2,periodMins:45};save();V.sheet=null;render()}
+  reset(){DB=blankDB();DB.user={id:'local',email:'',name:'You',isSuper:true};S=EMPTY();V.tab='history';V.matchId=null;V.draft={name:'',age:'',ground:'',primary:'#071d49',secondary:'#ef176d',onPitch:11,periods:2,periodMins:45};save();V.sheet=null;render()}
 };
 
 function matchSummary(m){
@@ -2132,7 +2132,7 @@ async function createTeamCloud(){
     }
     if(t.proOn&&t.proTeam)await rest('PATCH','/teams?id=eq.'+encodeURIComponent(id),{pro_team:t.proTeam},'return=minimal');
     SYNC.state='idle';await syncNow(true);setCur(id);V.newTeam=false;V.tab='history';V.proNew=false;
-    V.draft=Object.assign({},V.draft,{name:'',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',proOn:false,proTeam:'',proClub:'',proName:''});
+    V.draft=Object.assign({},V.draft,{name:'',age:'',ground:'',primary:'#071d49',secondary:'#ef176d',proOn:false,proTeam:'',proClub:'',proName:''});
   }catch(e){V.err=e.message;V.proNew=false;toast('Could not create the team: '+e.message)}
   V.busy=false;render();
 }
@@ -2270,7 +2270,7 @@ async function syncNow(manual){
       (tr||[]).filter(x=>x.deleted).forEach(x=>{ids.delete(x.id);if(DB.teams[x.id]){removeTeamLocal(x.id);changed=true}});
     }
     for(const id of ids){
-      if(!DB.teams[id]){DB.teams[id]=Object.assign(EMPTY(),{team:{id,name:'…',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',onPitch:11,periods:2,periodMins:45}});changed=true}
+      if(!DB.teams[id]){DB.teams[id]=Object.assign(EMPTY(),{team:{id,name:'…',age:'',ground:'',primary:'#071d49',secondary:'#ef176d',onPitch:11,periods:2,periodMins:45}});changed=true}
       const r=roleOf[id]||'viewer';if(DB.teams[id].role!==r){DB.teams[id].role=r;changed=true}
     }
     for(const id of Object.keys(DB.teams)){if(!ids.has(id)){delete DB.teams[id];delete DB.sigs[id];delete DB.cursors[id];changed=true}}
@@ -2319,10 +2319,10 @@ if(CLOUD){
 }
 
 /* ---------- auth & team screens ---------- */
-const BRAND_MARK='<svg xmlns="http://www.w3.org/2000/svg" viewBox="52 78 338 186" aria-hidden="true"><polygon points="318,89 192,89 183,92 165,112 60,247 58,256 122,256 212,141 222,136 283,136" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><polygon points="362,155 299,155 224,257 287,257 360,162" fill="#315fea" stroke="#315fea" stroke-width="3" stroke-linejoin="round"/><polygon points="225,155 277,155 201,257 150,257" fill="#315fea" stroke="#315fea" stroke-width="3" stroke-linejoin="round"/><circle cx="356" cy="111" r="29" fill="#f05a8d"/></svg>';
+const BRAND_MARK='<img src="brand/emblem.png" alt="MyTeamCompanion" width="36" height="36" decoding="async">';
 function authView(){
   const a=V.auth;const up=a.mode==='up';
-  const head=`<header class="top"><div class="hrow"><span class="bm">${BRAND_MARK}</span><div><h1>MyTeamCompanion</h1><div class="sub">My team, my passion.</div></div></div></header><div class="note" style="text-align:center;margin:14px 16px 0;font-weight:600">${up?'Create your account':'Sign in to your team'}</div>`;
+  const head=`<header class="top brandhead"><img class="logo" src="brand/logo.png" alt="MyTeamCompanion: fixtures, results, stats and links" width="900" height="299"><div class="sub">My team, my passion.</div></header><div class="note" style="text-align:center;margin:14px 16px 0;font-weight:600">${up?'Create your account':'Sign in to your team'}</div>`;
   if(a.sent)return head+`<main><div class="card" style="text-align:center"><div style="font-size:42px">📧</div><h2 style="margin:6px 0">Check your email</h2><p style="margin:0 0 6px">We sent a link to <b>${esc(a.email.trim())}</b>.</p><p class="note" style="margin-top:0">Tap the link to confirm your email and you are in. It works once and expires soon. Open it on this device. Look in junk if it does not arrive.</p></div>
   ${a.err?`<div class="err">${esc(a.err)}</div>`:''}
   <button class="btn sec block" data-act="authLink" ${a.busy?'disabled':''}>${a.busy?'Sending…':'Send it again'}</button>
@@ -2991,7 +2991,7 @@ function actExtra(a,ds,el){
     case 'proPickClub':{
       const c=UK_CLUBS[+ds.i];if(!c)return true;const f=CLUB_INFO[c[0]]||[];
       if(followed(clubSlug(c[0]))){if(V.sheet&&V.sheet.d){V.sheet.d.err=c[0]+' is already in your list.';renderSheet()}return true}
-      V.draft=Object.assign({},V.draft,{name:c[0],age:'Professional',ground:f[2]||'',primary:f[0]||'#14243a',secondary:f[1]||'#ffffff',proOn:true,proTeam:clubSlug(c[0]),proClub:c[0],proName:c[0]});
+      V.draft=Object.assign({},V.draft,{name:c[0],age:'Professional',ground:f[2]||'',primary:f[0]||'#071d49',secondary:f[1]||'#ffffff',proOn:true,proTeam:clubSlug(c[0]),proClub:c[0],proName:c[0]});
       V.sheet=null;if(isGuest()){createTeamGuest();return true}V.proNew=true;createTeamCloud();return true}
     case 'newTeamOpen':V.newTeam=true;V.err='';render();return true;
     case 'newTeamBack':V.newTeam=false;V.err='';render();return true;
