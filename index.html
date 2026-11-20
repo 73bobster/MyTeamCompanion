@@ -2517,6 +2517,8 @@ const CLUB_LINKS={
  "sunderland":{site:"https://www.safc.com"},
  "tottenham-hotspur":{site:"https://www.tottenhamhotspur.com",shop:"https://shop.tottenhamhotspur.com"}
 };
+/* Premier League club pages are keyed by a numeric club id */
+const PL_IDS={"arsenal":3,"aston-villa":7,"bournemouth":91,"brentford":94,"brighton-and-hove-albion":36,"burnley":90,"chelsea":8,"crystal-palace":31,"everton":11,"fulham":54,"ipswich-town":40,"leeds-united":2,"liverpool":14,"manchester-city":43,"manchester-united":1,"newcastle-united":4,"nottingham-forest":17,"sunderland":56,"tottenham-hotspur":6,"west-ham-united":21,"wolverhampton-wanderers":39};
 function linksView(){
   const t=S.team,name=t.proClub||t.name,L=CLUB_LINKS[t.proTeam]||{};
   const host=u=>u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
@@ -2524,7 +2526,7 @@ function linksView(){
   const find=(label,q)=>row(label,'https://www.google.com/search?q='+encodeURIComponent(q),'Web search');
   const fans=(L.fans||[]).map(f=>row(f[0],f[1])).join('')+find('Find '+name+' supporters\' clubs',name+' official supporters clubs');
   const uk=UK_CLUBS.find(c=>clubSlug(c[0])===t.proTeam),lg=uk?uk[1]:'';
-  const body=/^Scottish/.test(lg)?row(name+' on the SPFL site','https://spfl.co.uk/clubs/'+encodeURIComponent(t.proTeam||''),'Fixtures, results and club details from the SPFL')+row('Scottish Professional Football League (SPFL)','https://spfl.co.uk'):lg==='Premier League'?row('Premier League','https://www.premierleague.com'):lg?row('English Football League (EFL)','https://www.efl.com'):'';
+  const body=/^Scottish/.test(lg)?row(name+' on the SPFL site','https://spfl.co.uk/clubs/'+encodeURIComponent(t.proTeam||''),'Fixtures, results and club details from the SPFL')+row('Scottish Professional Football League (SPFL)','https://spfl.co.uk'):lg==='Premier League'?(PL_IDS[t.proTeam]?row(name+' on the Premier League site','https://www.premierleague.com/en/clubs/'+PL_IDS[t.proTeam]+'/'+encodeURIComponent(t.proTeam)+'/overview','Fixtures, squad, stats and club details'):'')+row('Premier League','https://www.premierleague.com'):lg?row('English Football League (EFL)','https://www.efl.com'):'';
   return header('Links',name)+`<main>
   <h2 style="margin-top:0">Official club</h2>
   ${L.site?row(name+' official website',L.site):find(name+' official website',name+' official website')}
