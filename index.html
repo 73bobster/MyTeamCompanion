@@ -24,7 +24,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 var(--fo
 header.top{background:var(--p);color:var(--pt);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;position:sticky;top:0;z-index:5;border-bottom:4px solid var(--s)}
 h1,h2{font-family:var(--head);font-weight:800}
 header.top h1{margin:0;font-size:20px;line-height:1.2}
-header.top.brandhead{background:#fff;color:#071d49;text-align:center;padding-bottom:10px}header.top.brandhead .logo{display:block;width:min(100%,440px);height:auto;margin:0 auto}header.top.brandhead .sub{opacity:1;margin-top:2px;font-weight:700;color:#071d49}
+header.top.brandhead{background:#fff;color:#071d49;text-align:center;padding-bottom:8px}main.auth{padding-top:8px}main.auth label{margin-bottom:8px}main.auth input{min-height:42px;padding-top:6px;padding-bottom:6px}main.auth .seg button{min-height:42px}main.auth .btn.lg{min-height:48px;font-size:16px}main.auth .btn{min-height:44px}main.auth .card{padding:10px 12px}main.auth .note{margin:4px 0 8px;font-size:12px}header.top.brandhead .logo{display:block;width:min(100%,300px);height:auto;margin:0 auto}header.top.brandhead .sub{opacity:1;margin-top:2px;font-weight:700;color:#071d49}
 header.top .sub{font-size:13px;opacity:.85}
 header.top .tn{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header.top .hrow{display:flex;align-items:center;gap:12px}
@@ -2322,13 +2322,13 @@ if(CLOUD){
 const BRAND_MARK='<img src="brand/emblem.png" alt="MyTeamCompanion" width="36" height="36" decoding="async">';
 function authView(){
   const a=V.auth;const up=a.mode==='up';
-  const head=`<header class="top brandhead"><img class="logo" src="brand/logo.png" alt="MyTeamCompanion: fixtures, results, stats and links" width="900" height="299"><div class="sub">My team, my passion.</div></header><div class="note" style="text-align:center;margin:14px 16px 0;font-weight:600">${up?'Create your account':'Sign in to your team'}</div>`;
+  const head=`<header class="top brandhead"><img class="logo" src="brand/logo.png" alt="MyTeamCompanion: fixtures, results, stats and links" width="900" height="299"></header><div class="note" style="text-align:center;margin:8px 16px 0;font-weight:600">${up?'Create your account':'Sign in to your team'}</div>`;
   if(a.sent)return head+`<main><div class="card" style="text-align:center"><div style="font-size:42px">📧</div><h2 style="margin:6px 0">Check your email</h2><p style="margin:0 0 6px">We sent a link to <b>${esc(a.email.trim())}</b>.</p><p class="note" style="margin-top:0">Tap the link to confirm your email and you are in. It works once and expires soon. Open it on this device. Look in junk if it does not arrive.</p></div>
   ${a.err?`<div class="err">${esc(a.err)}</div>`:''}
   <button class="btn sec block" data-act="authLink" ${a.busy?'disabled':''}>${a.busy?'Sending…':'Send it again'}</button>
   <div style="text-align:center;margin-top:12px"><button class="linkbtn" data-act="authLinkBack">Use a different email</button></div></main>`;
   return head+`
-  <main>
+  <main class="auth">
   <div class="seg"><button class="${a.mode==='in'?'on':''}" data-act="authMode" data-v="in">Sign in</button><button class="${up?'on':''}" data-act="authMode" data-v="up">Create account</button></div>
   ${up?`<label>Your name<input data-bind="auth.name" value="${esc(a.name)}" autocomplete="name" placeholder="e.g. Robert Dalziel"></label>`:''}
   <label>Email<input type="email" data-bind="auth.email" value="${esc(a.email)}" autocomplete="email" autocapitalize="off" inputmode="email"></label>
@@ -2336,8 +2336,8 @@ function authView(){
   ${a.err?`<div class="err">${esc(a.err)}</div>`:''}
   ${up?`<button class="btn block lg" data-act="authLink" ${a.busy?'disabled':''}>${a.busy?'Sending…':'Email me a link'}</button><p class="note">No password needed. We email you a link to confirm your email address, then you are in.</p>`
   :`<button class="btn block lg" data-act="authGo" ${a.busy?'disabled':''}>${a.busy?'One moment…':'Sign in'}</button><div style="text-align:center;margin-top:10px"><button class="linkbtn" data-act="authLink">Email me a sign-in link instead</button></div>`}
-  <p class="note">Create an account to choose your team(s) and have them kept for every visit, on any device. Once you are in, the app keeps working with no signal and syncs when you are back online.</p>
-  <div class="card" style="margin-top:14px;text-align:center"><b>Just looking?</b><div class="note" style="margin:4px 0 10px">Continue as a guest with no email needed. You pick a team each time you visit, and nothing is kept afterwards.</div>
+  <p class="note">An account keeps your teams on every visit and device, and works offline.</p>
+  <div class="card" style="margin-top:8px;text-align:center"><b>Just looking?</b><div class="note" style="margin:2px 0 8px">No email needed. You pick a team each visit and nothing is kept.</div>
   <button class="btn sec block" data-act="guestGo" ${a.busy?'disabled':''}>Continue as guest</button></div>
   </main>`;
 }
