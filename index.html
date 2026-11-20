@@ -2465,16 +2465,29 @@ function linksView(){
   const t=S.team,name=t.proClub||t.name,L=CLUB_LINKS[t.proTeam]||{};
   const host=u=>u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0];
   const row=(label,url,sub)=>`<a class="prow" href="${esc(url)}" target="_blank" rel="noopener"><div class="nm">${esc(label)}<small>${esc(sub||host(url))}</small></div><span style="color:var(--mute)">↗</span></a>`;
-  const find=(label,q)=>row(label,'https://www.google.com/search?q='+encodeURIComponent(q),'Web search for the official page');
+  const find=(label,q)=>row(label,'https://www.google.com/search?q='+encodeURIComponent(q),'Web search');
   const fans=(L.fans||[]).map(f=>row(f[0],f[1])).join('')+find('Find '+name+' supporters\' clubs',name+' official supporters clubs');
+  const uk=UK_CLUBS.find(c=>clubSlug(c[0])===t.proTeam),lg=uk?uk[1]:'';
+  const body=/^Scottish/.test(lg)?row('Scottish Professional Football League (SPFL)','https://spfl.co.uk'):lg==='Premier League'?row('Premier League','https://www.premierleague.com'):lg?row('English Football League (EFL)','https://www.efl.com'):'';
   return header('Links',name)+`<main>
   <h2 style="margin-top:0">Official club</h2>
   ${L.site?row(name+' official website',L.site):find(name+' official website',name+' official website')}
+  ${row(name+' on BBC Sport','https://www.bbc.co.uk/sport/football/teams/'+encodeURIComponent(t.proTeam||''),'Fixtures, results and news from the BBC')}
   <h2>Club shop and merchandise</h2>
   ${L.shop?row(name+' official shop',L.shop):find(name+' official shop',name+' official club shop')}
+  ${find('Unofficial '+name+' fan merchandise',name+' unofficial fan merchandise')}
   <h2>Supporters' clubs</h2>
   ${fans}
-  <div class="note">Links open in a new tab. Where we have not checked an official address yet, the link runs a web search for it.</div>
+  <h2>Fan media</h2>
+  ${find(name+' fan sites and forums',name+' fan site forum')}
+  ${find(name+' fanzines and podcasts',name+' fanzine podcast')}
+  <h2>Leagues and media</h2>
+  ${body}${row('UEFA','https://www.uefa.com')}
+  ${row('BBC Sport football','https://www.bbc.co.uk/sport/football')}
+  ${row('Sky Sports football','https://www.skysports.com/football')}
+  ${row('The Guardian football','https://www.theguardian.com/football')}
+  ${row('Football Supporters\' Association','https://thefsa.org.uk')}
+  <div class="note">Links open in a new tab. Where we have not checked an address yet, the link runs a web search for it.</div>
   </main>`;
 }
 
