@@ -567,12 +567,16 @@ function load(){
   }
   return db}
 let DB=load();
+/* a guest stays signed in across a refresh, but only for this browser tab: closing it ends the visit */
+const GKEY='myteamcompanion-guest';
+function saveGuest(){try{sessionStorage.setItem(GKEY,JSON.stringify(DB))}catch(e){}}
+try{const g=JSON.parse(sessionStorage.getItem(GKEY)||'null');if(g&&g.user&&g.user.guest)DB=g}catch(e){}
 if(!CLOUD)DB.user=DB.user||{id:'local',email:'',name:'You',isSuper:true};
 Object.values(DB.teams).forEach(t=>{t.sessions=t.sessions||[]});
 let S=DB.teams[DB.cur]||EMPTY();
 let REV=0;
-function save(){REV++;if(DB.user&&DB.user.guest)return;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}if(CLOUD&&typeof schedSync==='function')schedSync()}
-function setCur(id){DB.cur=id;S=DB.teams[id]||EMPTY();V.tab='home';V.matchId=null;V.sess=null;V.sheet=null;if(DB.user&&DB.user.guest)return;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
+function save(){REV++;if(DB.user&&DB.user.guest){saveGuest();return}try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}if(CLOUD&&typeof schedSync==='function')schedSync()}
+function setCur(id){DB.cur=id;S=DB.teams[id]||EMPTY();V.tab='home';V.matchId=null;V.sess=null;V.sheet=null;if(DB.user&&DB.user.guest){saveGuest();return}try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
 const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:(()=>{try{const fresh=!sessionStorage.getItem('myteamcompanion-open');sessionStorage.setItem('myteamcompanion-open','1');if(fresh)return 'home';const t=localStorage.getItem('myteamcompanion-view');return ['home','history','stats','tables','links','team'].includes(t)?t:'home'}catch(e){return 'home'}})(),step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
   auth:{mode:'in',email:'',password:'',name:'',err:'',busy:false,sent:false},
   draft:{name:'',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',onPitch:11,periods:2,periodMins:45},err:''};
@@ -2043,7 +2047,7 @@ async function doGuest(){
     SYNC.jwt=null;
     await authCall('/sign-in/email',{email:GUEST_EMAIL,password:GUEST_PW}).catch(()=>{throw new Error('Guest access is not available right now. Please try again shortly.')});
     try{await getJwt(true)}catch(e){throw new Error(BLOCKED)}
-    DB=blankDB();S=EMPTY();DB.user={id:'guest',email:'',name:'Guest',isSuper:false,guest:true};
+    DB=blankDB();S=EMPTY();DB.user={id:'guest',email:'',name:'Guest',isSuper:false,guest:true};saveGuest();
     SYNC.state='idle';PRO.slug=null;PRO.at=0;PRO.matches=[];PRO.season=null;
     statsClubsLoad();
   }catch(e){a.err=e.message}
@@ -2112,7 +2116,7 @@ async function doReauth(){
 }
 async function doSignOut(){
   try{await authCall('/sign-out',{})}catch(e){}
-  DB=blankDB();S=EMPTY();SYNC.jwt=null;SYNC.state='idle';try{localStorage.removeItem(KEY)}catch(e){}
+  DB=blankDB();S=EMPTY();SYNC.jwt=null;SYNC.state='idle';try{localStorage.removeItem(KEY);sessionStorage.removeItem(GKEY)}catch(e){}
   V.sheet=null;V.tab='history';render();
 }
 async function createTeamCloud(){
