@@ -2462,7 +2462,9 @@ function tablesView(){
   const uk=UK_CLUBS.find(c=>clubSlug(c[0])===t.proTeam);
   const home=uk?String(uk[1]).toLowerCase().replace(/\s+/g,'-'):'';
   const euro=['champions-league','europa-league','conference-league'];
-  const list=TBL.list.filter(T=>T.comp===home||T.rows.some(r=>sameClub(r.team,club))).sort((a,b)=>(a.comp===home?-1:b.comp===home?1:0)||(euro.indexOf(a.comp)-euro.indexOf(b.comp)));
+  /* at most two: the club's own league, and the one European competition it is in */
+  const dom=TBL.list.find(T=>T.comp===home),eu=TBL.list.find(T=>euro.includes(T.comp)&&T.rows.some(r=>sameClub(r.team,club)));
+  const list=[dom,eu].filter(Boolean);
   const cur=list.find(T=>T.comp===V.tbl)||list[0];
   const when=cur&&cur.fetched_at?new Date(cur.fetched_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   let body;
