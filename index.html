@@ -2524,7 +2524,7 @@ function linksView(){
   const find=(label,q)=>row(label,'https://www.google.com/search?q='+encodeURIComponent(q),'Web search');
   const fans=(L.fans||[]).map(f=>row(f[0],f[1])).join('')+find('Find '+name+' supporters\' clubs',name+' official supporters clubs');
   const uk=UK_CLUBS.find(c=>clubSlug(c[0])===t.proTeam),lg=uk?uk[1]:'';
-  const body=/^Scottish/.test(lg)?row('Scottish Professional Football League (SPFL)','https://spfl.co.uk'):lg==='Premier League'?row('Premier League','https://www.premierleague.com'):lg?row('English Football League (EFL)','https://www.efl.com'):'';
+  const body=/^Scottish/.test(lg)?row(name+' on the SPFL site','https://spfl.co.uk/clubs/'+encodeURIComponent(t.proTeam||''),'Fixtures, results and club details from the SPFL')+row('Scottish Professional Football League (SPFL)','https://spfl.co.uk'):lg==='Premier League'?row('Premier League','https://www.premierleague.com'):lg?row('English Football League (EFL)','https://www.efl.com'):'';
   return header('Links',name)+`<main>
   <h2 style="margin-top:0">Official club</h2>
   ${L.site?row(name+' official website',L.site):find(name+' official website',name+' official website')}
