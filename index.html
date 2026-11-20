@@ -1493,7 +1493,7 @@ function historyView(){
   const t=S.team;
   const proDone=(CLOUD&&t&&t.proTeam)?PRO.matches.filter(m=>m.status==='finished'&&!proRecorded(m)&&compOk(m)):[];
   const rows=[...ms.map(m=>({k:(m.date||'')+(m.time||''),h:resultCard(m)})),...proDone.map(m=>({k:(m.match_date||'')+String(m.kickoff||'').slice(0,5),h:proResultCard(m)}))].sort((a,b)=>b.k.localeCompare(a.k));
-  return header('Results',fi.length?`P${fi.length} · W${w} D${d} L${l}`:'')+`<main>${proUpcoming()}${formStrip(ms)}${compBar()}${seasonCard(ms)}${rows.length?`<div class="cols">${rows.map(r=>r.h).join('')}</div>`:(t&&t.proTeam?'':'<div class="empty"><b>No finished matches yet</b>Record your first match and it will appear here.</div>')}</main>`;
+  return header('Results',fi.length?`P${fi.length} · W${w} D${d} L${l}`:'')+`<main>${formStrip(ms)}${compBar()}${seasonCard(ms)}${rows.length?`<div class="cols">${rows.map(r=>r.h).join('')}</div>`:(t&&t.proTeam?'':'<div class="empty"><b>No finished matches yet</b>Record your first match and it will appear here.</div>')}</main>`;
 }
 
 function summaryView(m){
@@ -2425,7 +2425,7 @@ function homeView(){
   const mine=(PRO.matches||[]).filter(m=>compNorm(m.comp)===lg);
   const fin=mine.filter(m=>m.status==='finished'&&m.home_goals!=null).sort((a,b)=>String(a.match_date).localeCompare(String(b.match_date))).slice(-6);
   const today=new Date().toISOString().slice(0,10);
-  const nxt=mine.filter(m=>m.status==='scheduled'&&String(m.match_date).slice(0,10)>=today).sort((a,b)=>String(a.match_date).localeCompare(String(b.match_date))).slice(0,3);
+  const nxt=mine.filter(m=>m.status==='scheduled'&&String(m.match_date).slice(0,10)>=today).sort((a,b)=>String(a.match_date).localeCompare(String(b.match_date))).slice(0,6);
   const ab=abbrMap([...fin,...nxt].map(m=>proClubSide(m)==='home'?m.away:m.home));
   const dfmt=d=>new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
   const resT=fin.map(m=>{const side=proClubSide(m),R=proResult(m,side),opp=side==='home'?m.away:m.home;
