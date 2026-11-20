@@ -1513,11 +1513,12 @@ function pgrid(ids,act,extra,hurtM){
   return `<div class="pg">${byNum(ids).map(id=>{const p=P(id);const inj=p.injured||hurt.has(id);return `<button class="pb${inj?' hurt':''}" data-act="${act}" data-id="${id}">${inj?'<s class="pbx">'+RX+'</s>':''}<b>${esc(p.num)}</b><span>${esc(sname(p))}</span></button>`}).join('')}${extra||''}</div>`;
 }
 const chips=(arr,act,sel)=>`<div class="chips">${arr.map(x=>`<button class="${sel===x?'on':''}" data-act="${act}" data-val="${esc(x)}">${esc(x)}</button>`).join('')}</div>`;
+const followed=slug=>Object.values(DB.teams||{}).some(x=>x.team&&x.team.proTeam&&x.team.proTeam===slug);
 function proPickList(q){
   const k=clubKey(q);const a=CLUB_ALIAS[k];
   const hits=UK_CLUBS.map((c,i)=>[c,i]).filter(([c])=>(!isGuest()||STATS_CLUBS.includes(clubSlug(c[0])))&&(!k||clubKey(c[0]).includes(k)||(a&&c[0]===a))).slice(0,40);
   if(!hits.length)return '<div class="note">No club found. Check the spelling, or use Create or Join Team to enter it yourself.</div>';
-  return hits.map(([c,i])=>{const f=CLUB_INFO[c[0]]||[];return `<div class="prow" data-act="proPickClub" data-i="${i}" style="cursor:pointer"><span class="crest" style="width:34px;height:34px;font-size:13px;${f[0]?`background:${f[0]};color:${textOn(f[0])};border-color:${f[1]||'#fff'}`:''}">${esc(c[0].split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</span><div class="nm">${esc(c[0])}<small>${esc(c[1])}</small></div></div>`}).join('');
+  return hits.map(([c,i])=>{const f=CLUB_INFO[c[0]]||[];const have=followed(clubSlug(c[0]));return `<div class="prow" ${have?'style="opacity:.55"':`data-act="proPickClub" data-i="${i}" style="cursor:pointer"`}><span class="crest" style="width:34px;height:34px;font-size:13px;${f[0]?`background:${f[0]};color:${textOn(f[0])};border-color:${f[1]||'#fff'}`:''}">${esc(c[0].split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</span><div class="nm">${esc(c[0])}<small>${have?'Already following':esc(c[1])}</small></div></div>`}).join('');
 }
 function sheetWrap(title,inner,back){
   return `<div class="sheet-in"><div class="sheet-h">${back?`<button data-act="sback" aria-label="Back">‹</button>`:''}<h3>${title}</h3><button data-act="closeSheet" aria-label="Close">✕</button></div>${inner}</div>`;
@@ -2292,7 +2293,7 @@ if(CLOUD){
 const BRAND_MARK='<svg xmlns="http://www.w3.org/2000/svg" viewBox="52 78 338 186" aria-hidden="true"><polygon points="318,89 192,89 183,92 165,112 60,247 58,256 122,256 212,141 222,136 283,136" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><polygon points="362,155 299,155 224,257 287,257 360,162" fill="#315fea" stroke="#315fea" stroke-width="3" stroke-linejoin="round"/><polygon points="225,155 277,155 201,257 150,257" fill="#315fea" stroke="#315fea" stroke-width="3" stroke-linejoin="round"/><circle cx="356" cy="111" r="29" fill="#f05a8d"/></svg>';
 function authView(){
   const a=V.auth;const up=a.mode==='up';
-  const head=`<header class="top"><div class="hrow"><span class="bm">${BRAND_MARK}</span><div><h1>MyTeamCompanion</h1><div class="sub">Every moment. Every player.</div></div></div></header><div class="note" style="text-align:center;margin:14px 16px 0;font-weight:600">${up?'Create your account':'Sign in to your team'}</div>`;
+  const head=`<header class="top"><div class="hrow"><span class="bm">${BRAND_MARK}</span><div><h1>MyTeamCompanion</h1><div class="sub">My team, my passion.</div></div></div></header><div class="note" style="text-align:center;margin:14px 16px 0;font-weight:600">${up?'Create your account':'Sign in to your team'}</div>`;
   if(a.sent)return head+`<main><div class="card" style="text-align:center"><div style="font-size:42px">📧</div><h2 style="margin:6px 0">Check your email</h2><p style="margin:0 0 6px">We sent a link to <b>${esc(a.email.trim())}</b>.</p><p class="note" style="margin-top:0">Tap the link to confirm your email and you are in. It works once and expires soon. Open it on this device. Look in junk if it does not arrive.</p></div>
   ${a.err?`<div class="err">${esc(a.err)}</div>`:''}
   <button class="btn sec block" data-act="authLink" ${a.busy?'disabled':''}>${a.busy?'Sending…':'Send it again'}</button>
@@ -2862,6 +2863,7 @@ function actExtra(a,ds,el){
     case 'proPickOpen':V.sheet={kind:'proPick',d:{q:''}};renderSheet();return true;
     case 'proPickClub':{
       const c=UK_CLUBS[+ds.i];if(!c)return true;const f=CLUB_INFO[c[0]]||[];
+      if(followed(clubSlug(c[0]))){if(V.sheet&&V.sheet.d){V.sheet.d.err=c[0]+' is already in your list.';renderSheet()}return true}
       V.draft=Object.assign({},V.draft,{name:c[0],age:'Professional',ground:f[2]||'',primary:f[0]||'#14243a',secondary:f[1]||'#ffffff',proOn:true,proTeam:clubSlug(c[0]),proClub:c[0],proName:c[0]});
       V.sheet=null;if(isGuest()){createTeamGuest();return true}V.proNew=true;createTeamCloud();return true}
     case 'newTeamOpen':V.newTeam=true;V.err='';render();return true;

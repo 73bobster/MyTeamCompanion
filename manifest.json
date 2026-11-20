@@ -1,7 +1,7 @@
 {
   "name": "MyTeamCompanion",
   "short_name": "MyTeamCompanion",
-  "description": "Every moment. Every player. Record your team, squad and matches from the touchline.",
+  "description": "My team, my passion. Follow your club's results, squad and stats.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
