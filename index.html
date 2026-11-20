@@ -125,6 +125,19 @@ header.top .bmk{display:inline-flex;width:40px;flex:none;opacity:.95}header.top 
 .hero .pens{font-weight:700;margin:2px 0 6px}
 a.prow{text-decoration:none;color:inherit}
 .tabs button{min-width:0;padding-left:2px;padding-right:2px}
+.home{display:flex;flex-direction:column;gap:clamp(6px,1.3vh,12px);padding-top:clamp(6px,1.2vh,12px)}
+.home h2{margin:0 0 3px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
+.home .lt-wrap{margin:0}.home .lt{font-size:12.5px}
+.home .lt th,.home .lt td{padding:clamp(3px,.8vh,6px) 3px}
+.home .lt .tm{min-width:0;max-width:104px;overflow:hidden;text-overflow:ellipsis}
+.home .lt td:first-child,.home .lt th:first-child{padding-left:5px;padding-right:4px}
+.tiles{display:grid;gap:5px}
+.tile{border:1px solid var(--line);border-radius:10px;background:#fff;text-align:center;padding:4px 1px 0;overflow:hidden;min-width:0}
+.tile small{display:block;font-size:10px;color:var(--mute);line-height:1.25;white-space:nowrap}
+.tile b{display:block;font-size:13px;line-height:1.3}
+.tile .sc{font-size:14px;font-weight:800}
+.tile .bar{height:4px;margin-top:3px}
+.tile.W .bar{background:#1e8f4e}.tile.D .bar{background:#8a8f98}.tile.L .bar{background:#c0392b}
 .lt-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:8px}
 .lt{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
 .lt th,.lt td{padding:7px 6px;text-align:center;white-space:nowrap;background:#fff}
@@ -558,8 +571,8 @@ Object.values(DB.teams).forEach(t=>{t.sessions=t.sessions||[]});
 let S=DB.teams[DB.cur]||EMPTY();
 let REV=0;
 function save(){REV++;if(DB.user&&DB.user.guest)return;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}if(CLOUD&&typeof schedSync==='function')schedSync()}
-function setCur(id){DB.cur=id;S=DB.teams[id]||EMPTY();V.tab='history';V.matchId=null;V.sess=null;V.sheet=null;if(DB.user&&DB.user.guest)return;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
-const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:(()=>{try{const t=localStorage.getItem('myteamcompanion-view');return ['history','stats','tables','links','team'].includes(t)?t:'history'}catch(e){return 'history'}})(),step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
+function setCur(id){DB.cur=id;S=DB.teams[id]||EMPTY();V.tab='home';V.matchId=null;V.sess=null;V.sheet=null;if(DB.user&&DB.user.guest)return;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
+const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:(()=>{try{const fresh=!sessionStorage.getItem('myteamcompanion-open');sessionStorage.setItem('myteamcompanion-open','1');if(fresh)return 'home';const t=localStorage.getItem('myteamcompanion-view');return ['home','history','stats','tables','links','team'].includes(t)?t:'home'}catch(e){return 'home'}})(),step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
   auth:{mode:'in',email:'',password:'',name:'',err:'',busy:false,sent:false},
   draft:{name:'',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',onPitch:11,periods:2,periodMins:45},err:''};
 const T=()=>(V.newTeam||!S.team)?V.draft:S.team;
@@ -715,7 +728,7 @@ function tabbar(){
   const live=M()&&M().status==='live';
   const t=(k,i,l,cls)=>`<button class="${V.tab===k||(k==='history'&&V.tab==='pro')?'on':''}" data-act="tab" data-tab="${k}"><i>${i}</i>${l}${cls==='live'?' <span style="color:var(--bad)">●</span>':''}</button>`;
   const lv=live||(!canEdit()&&liveOther());
-  return `<nav class="tabs"><div>${t('history','📋','Results')}${t('stats','📊','Stats')}${t('tables','🏆','Tables')}${t('links','🔗','Links')}${t('team','🎽',teamsLabel())}</div></nav>`;
+  return `<nav class="tabs"><div>${t('home','🏠','Home')}${t('history','📋','Results')}${t('stats','📊','Stats')}${t('tables','🏆','Tables')}${t('links','🔗','Links')}${t('team','🎽',teamsLabel())}</div></nav>`;
 }
 
 function onboard(){
@@ -1760,7 +1773,7 @@ function act(a,ds,el){
   const m=M();
   if(actExtra(a,ds,el))return;
   switch(a){
-    case 'tab':V.top=1;if(ds.tab==='tables')setTimeout(()=>tablesLoad(),0);if((ds.tab==='history'||ds.tab==='match'||ds.tab==='squad'||ds.tab==='stats')&&S.team&&S.team.proTeam)setTimeout(()=>proLoad(),0);V.ts=null;V.tab=ds.tab;V.matchId=null;V.sheet=null;V.sess=null;V.newTeam=false;break;
+    case 'tab':V.top=1;if(ds.tab==='tables'||ds.tab==='home')setTimeout(()=>tablesLoad(),0);if(ds.tab==='home'&&S.team&&S.team.proTeam)setTimeout(()=>proLoad(),0);if((ds.tab==='history'||ds.tab==='match'||ds.tab==='squad'||ds.tab==='stats')&&S.team&&S.team.proTeam)setTimeout(()=>proLoad(),0);V.ts=null;V.tab=ds.tab;V.matchId=null;V.sheet=null;V.sess=null;V.newTeam=false;break;
     case 'createTeam':{
       const t=V.draft;if(!t.name.trim()){V.err='Give your team a name first.';break}
       V.err='';S.team=Object.assign({},t,{name:t.name.trim()});save();V.tab='history';break}
@@ -2039,7 +2052,7 @@ function createTeamGuest(){
   const t=V.draft;const id='guest-'+t.proTeam;
   DB.teams={};DB.teams[id]=Object.assign(EMPTY(),{team:{id,name:t.name,age:'Professional',ground:t.ground||'',primary:t.primary,secondary:t.secondary,onPitch:11,periods:2,periodMins:45,proOn:true,proTeam:t.proTeam,proClub:t.proClub,proName:t.proName,proSeen:true},role:'coach'});
   PRO.slug=null;PRO.at=0;PRO.matches=[];PRO.season=null;
-  setCur(id);V.newTeam=false;V.proNew=false;V.sheet=null;V.tab='history';V.top=1;render();
+  setCur(id);V.newTeam=false;V.proNew=false;V.sheet=null;V.tab='home';V.top=1;render();
 }
 async function doLink(){
   const a=V.auth;a.err='';const email=a.email.trim();
@@ -2385,6 +2398,47 @@ function showInstall(){
   }catch(e){return false}
 }
 
+
+/* ---------- home: the whole picture on one phone screen ---------- */
+function homeView(){
+  const t=S.team,club=t.proClub||t.name;
+  const uk=UK_CLUBS.find(c=>clubSlug(c[0])===t.proTeam),lg=uk?uk[1]:'';
+  const comp=lg?lg.toLowerCase().replace(/\s+/g,'-'):'';
+  /* fetch what is missing, at most once a minute, so a failed load cannot loop */
+  if(!V.homeKick||Date.now()-V.homeKick>60000){V.homeKick=Date.now();setTimeout(()=>{tablesLoad();if(t.proTeam)proLoad()},0)}
+  const T=TBL.list.find(x=>x.comp===comp);
+  /* the table: me with two above and two below; at the top or bottom, five others on the side that has them */
+  let tbl='<div class="card note" style="margin:0">'+(TBL.busy?'Loading the table…':'The league table is not available yet.')+'</div>',place='';
+  if(T){
+    const n=T.rows.length,mi=T.rows.findIndex(r=>sameClub(r.team,club));
+    if(mi>=0){
+      const i=mi+1;let a=i-2,b=i+2;
+      if(i<=2){a=1;b=Math.min(n,6)}else if(i>=n-1){b=n;a=Math.max(1,n-5)}
+      a=Math.max(1,a);b=Math.min(n,b);
+      const rows=T.rows.slice(a-1,b);
+      place=ordinal(i)+' of '+n;
+      tbl=`<div class="lt-wrap"><table class="lt"><thead><tr><th>#</th><th class="tm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>Pts</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.pos===i?'me':''}"><td>${r.pos}</td><td class="tm">${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td class="pts">${r.pts}</td></tr>`).join('')}</tbody></table></div>`;
+    }else tbl='<div class="card note" style="margin:0">'+esc(club)+' is not in the '+esc(T.name)+' table.</div>';
+  }
+  /* league games only */
+  const mine=(PRO.matches||[]).filter(m=>compNorm(m.comp)===lg);
+  const fin=mine.filter(m=>m.status==='finished'&&m.home_goals!=null).sort((a,b)=>String(a.match_date).localeCompare(String(b.match_date))).slice(-6);
+  const today=new Date().toISOString().slice(0,10);
+  const nxt=mine.filter(m=>m.status==='scheduled'&&String(m.match_date).slice(0,10)>=today).sort((a,b)=>String(a.match_date).localeCompare(String(b.match_date))).slice(0,4);
+  const ab=abbrMap([...fin,...nxt].map(m=>proClubSide(m)==='home'?m.away:m.home));
+  const dfmt=d=>new Date(d).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  const resT=fin.map(m=>{const side=proClubSide(m),R=proResult(m,side),opp=side==='home'?m.away:m.home;
+    return `<div class="tile ${R.res}" title="${esc(opp)}"><small>${side==='home'?'H':'A'} · ${esc(new Date(m.match_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</small><b>${esc(ab(opp))}</b><span class="sc">${R.us}–${R.them}</span><div class="bar"></div></div>`}).join('');
+  const fxT=nxt.map(m=>{const side=proClubSide(m),opp=side==='home'?m.away:m.home;
+    return `<div class="tile" title="${esc(opp)}"><small>${esc(dfmt(m.match_date))}</small><b>${esc(ab(opp))}</b><small style="padding-bottom:4px">${side==='home'?'H':'A'}${m.kickoff?' · '+esc(String(m.kickoff).slice(0,5)):''}</small></div>`}).join('');
+  const empty=(txt)=>`<div class="card note" style="margin:0">${(!PRO.at&&PRO.busy)?'Loading…':txt}</div>`;
+  return header('Home')+`<main class="home">
+  <div><h2>${esc(lg||'League')}${place?' · '+place:''}</h2>${tbl}</div>
+  <div><h2>Last ${fin.length||6} league results</h2>${fin.length?`<div class="tiles" style="grid-template-columns:repeat(6,1fr)">${resT}</div>`:empty('No league results yet.')}</div>
+  <div><h2>Next fixtures</h2>${nxt.length?`<div class="tiles" style="grid-template-columns:repeat(4,1fr)">${fxT}</div>`:empty('No league fixtures listed yet.')}</div>
+  </main>`;
+}
+const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th','st','nd','rd'][v]||'th')};
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 const TBLKEY='myteamcompanion-tables-v1';
@@ -3310,6 +3364,7 @@ function render(){
   else if(V.tab==='tables')body=tablesView();
   else if(V.tab==='stats')body=statsView();
   else if(V.tab==='pro')body=proView();
+  else if(V.tab==='home')body=homeView();
   else if(V.tab==='history')body=historyView();
   else body=historyView();
   app.innerHTML=body+tabbar();
