@@ -125,6 +125,17 @@ header.top .bmk{display:inline-flex;width:40px;flex:none;opacity:.95}header.top 
 .hero .pens{font-weight:700;margin:2px 0 6px}
 a.prow{text-decoration:none;color:inherit}
 .tabs button{min-width:0;padding-left:2px;padding-right:2px}
+.lt-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:8px}
+.lt{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.lt th,.lt td{padding:7px 6px;text-align:center;white-space:nowrap;background:#fff}
+.lt th{font-size:11px;color:var(--mute);border-bottom:1px solid var(--line)}
+.lt .tm{text-align:left;min-width:132px;position:sticky;left:0;z-index:1}
+.lt td:first-child{border-left:4px solid transparent}
+.lt tr.z-up td:first-child{border-left-color:#1e8f4e}.lt tr.z-po td:first-child{border-left-color:#f59e0b}.lt tr.z-down td:first-child{border-left-color:#c0392b}
+.lt tr.me td{background:#e8f0fe;font-weight:700}
+.lt td.pts{font-weight:800}
+.lt .fm{display:inline-flex;gap:2px;vertical-align:middle}.lt .fm i{display:inline-block;width:14px;height:14px;border-radius:3px;font-style:normal;font-size:9px;line-height:14px;color:#fff;font-weight:700}
+.lt .fm .W{background:#1e8f4e}.lt .fm .D{background:#8a8f98}.lt .fm .L{background:#c0392b}
 .stars{display:flex;gap:6px;margin:4px 0 8px}.stars button{background:none;border:0;font-size:34px;line-height:1;min-height:44px;min-width:44px;padding:0;color:#c7ccd4}.stars button.on{color:#f5a623}
 textarea.fb{width:100%;min-height:110px;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff);color:var(--ink)}
 .chart{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}
@@ -548,7 +559,7 @@ let S=DB.teams[DB.cur]||EMPTY();
 let REV=0;
 function save(){REV++;if(DB.user&&DB.user.guest)return;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}if(CLOUD&&typeof schedSync==='function')schedSync()}
 function setCur(id){DB.cur=id;S=DB.teams[id]||EMPTY();V.tab='history';V.matchId=null;V.sess=null;V.sheet=null;if(DB.user&&DB.user.guest)return;try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
-const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:(()=>{try{const t=localStorage.getItem('myteamcompanion-view');return ['history','stats','links','team'].includes(t)?t:'history'}catch(e){return 'history'}})(),step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
+const V={lsel:null,prefill:'',luList:false,sortDir:0,tab:(()=>{try{const t=localStorage.getItem('myteamcompanion-view');return ['history','stats','tables','links','team'].includes(t)?t:'history'}catch(e){return 'history'}})(),step:'details',matchId:null,sess:null,sheet:null,imp:null,attMode:'sessions',sort:'num',
   auth:{mode:'in',email:'',password:'',name:'',err:'',busy:false,sent:false},
   draft:{name:'',age:'',ground:'',primary:'#14243a',secondary:'#f05a8d',onPitch:11,periods:2,periodMins:45},err:''};
 const T=()=>(V.newTeam||!S.team)?V.draft:S.team;
@@ -704,7 +715,7 @@ function tabbar(){
   const live=M()&&M().status==='live';
   const t=(k,i,l,cls)=>`<button class="${V.tab===k||(k==='history'&&V.tab==='pro')?'on':''}" data-act="tab" data-tab="${k}"><i>${i}</i>${l}${cls==='live'?' <span style="color:var(--bad)">●</span>':''}</button>`;
   const lv=live||(!canEdit()&&liveOther());
-  return `<nav class="tabs"><div>${t('history','📋','Results')}${t('stats','📊','Stats')}${t('links','🔗','Links')}${t('team','🎽',teamsLabel())}</div></nav>`;
+  return `<nav class="tabs"><div>${t('history','📋','Results')}${t('stats','📊','Stats')}${t('tables','🏆','Tables')}${t('links','🔗','Links')}${t('team','🎽',teamsLabel())}</div></nav>`;
 }
 
 function onboard(){
@@ -1749,7 +1760,7 @@ function act(a,ds,el){
   const m=M();
   if(actExtra(a,ds,el))return;
   switch(a){
-    case 'tab':V.top=1;if((ds.tab==='history'||ds.tab==='match'||ds.tab==='squad'||ds.tab==='stats')&&S.team&&S.team.proTeam)setTimeout(()=>proLoad(),0);V.ts=null;V.tab=ds.tab;V.matchId=null;V.sheet=null;V.sess=null;V.newTeam=false;break;
+    case 'tab':V.top=1;if(ds.tab==='tables')setTimeout(()=>tablesLoad(),0);if((ds.tab==='history'||ds.tab==='match'||ds.tab==='squad'||ds.tab==='stats')&&S.team&&S.team.proTeam)setTimeout(()=>proLoad(),0);V.ts=null;V.tab=ds.tab;V.matchId=null;V.sheet=null;V.sess=null;V.newTeam=false;break;
     case 'createTeam':{
       const t=V.draft;if(!t.name.trim()){V.err='Give your team a name first.';break}
       V.err='';S.team=Object.assign({},t,{name:t.name.trim()});save();V.tab='history';break}
@@ -2375,6 +2386,47 @@ function showInstall(){
 }
 
 
+/* ---------- league tables (loaded from the feed, read only) ---------- */
+const TBLKEY='myteamcompanion-tables-v1';
+const TBL=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(TBLKEY)||'{}')}catch(e){}return {list:o.list||[],at:o.at||0,busy:false,err:''}})();
+async function tablesLoad(force){
+  if(!CLOUD||!DB.user||TBL.busy)return;
+  if(!force&&TBL.at&&Date.now()-TBL.at<600000)return;
+  TBL.busy=true;TBL.err='';render();
+  try{
+    TBL.list=await rest('GET','/pro_tables?select=comp,name,rows,fetched_at')||[];TBL.at=Date.now();
+    try{localStorage.setItem(TBLKEY,JSON.stringify({list:TBL.list,at:TBL.at}))}catch(e){}
+  }catch(e){TBL.err=navigator.onLine?(e.status===401||e.code==='auth'?'Sign in again to load the tables.':'Could not load the tables ('+e.message+').'):'You are offline, showing the last tables saved.'}
+  TBL.busy=false;render();
+}
+const sameClub=(a,b)=>{const x=clubKey(a),y=clubKey(b);return !!x&&!!y&&(x===y||(x.length>3&&y.length>3&&(x.includes(y)||y.includes(x))))};
+/* coloured bands down the left edge: [places going up, play-off places, places going down] and what they mean */
+const TZONES={'champions-league':[8,16,0,'Top 8 go straight to the last 16, 9th to 24th to the play-offs'],'europa-league':[8,16,0,'Top 8 go straight to the last 16, 9th to 24th to the play-offs'],'conference-league':[8,16,0,'Top 8 go straight to the last 16, 9th to 24th to the play-offs'],
+  'premier-league':[0,0,3,'Bottom three are relegated'],'championship':[2,4,3,'Top two promoted, 3rd to 6th in the play-offs, bottom three relegated'],'league-one':[2,4,4,'Top two promoted, 3rd to 6th in the play-offs, bottom four relegated'],'league-two':[3,4,2,'Top three promoted, 4th to 7th in the play-offs, bottom two relegated']};
+function tablesView(){
+  const t=S.team,club=t.proClub||t.name;
+  const uk=UK_CLUBS.find(c=>clubSlug(c[0])===t.proTeam);
+  const home=uk?String(uk[1]).toLowerCase().replace(/\s+/g,'-'):'';
+  const euro=['champions-league','europa-league','conference-league'];
+  const list=TBL.list.filter(T=>T.comp===home||T.rows.some(r=>sameClub(r.team,club))).sort((a,b)=>(a.comp===home?-1:b.comp===home?1:0)||(euro.indexOf(a.comp)-euro.indexOf(b.comp)));
+  const cur=list.find(T=>T.comp===V.tbl)||list[0];
+  const when=cur&&cur.fetched_at?new Date(cur.fetched_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  let body;
+  if(!cur){
+    body=`<div class="card note">${TBL.busy?'Loading the tables…':TBL.err?esc(TBL.err):'No table for this club yet. Tables are loaded with each feed update, so check back soon.'}</div>`;
+  }else{
+    const z=TZONES[cur.comp],n=cur.rows.length;
+    const zc=pos=>!z?'':pos<=z[0]?'z-up':pos<=z[0]+z[1]?'z-po':(z[2]&&pos>n-z[2])?'z-down':'';
+    const fm=f=>`<span class="fm">${(f||[]).slice(-5).map(x=>`<i class="${x}">${x}</i>`).join('')}</span>`;
+    body=`${list.length>1?`<div class="chips small" style="margin-bottom:8px">${list.map(T=>`<button class="${T.comp===cur.comp?'on':''}" data-act="tblPick" data-v="${esc(T.comp)}">${esc(T.name)}</button>`).join('')}</div>`:''}
+    <div class="lt-wrap"><table class="lt"><thead><tr><th>#</th><th class="tm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>GF</th><th>GA</th><th>Form</th></tr></thead><tbody>
+    ${cur.rows.map(r=>`<tr class="${sameClub(r.team,club)?'me':''} ${zc(r.pos)}"><td>${r.pos}</td><td class="tm">${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td><td>${r.gf}</td><td>${r.ga}</td><td>${fm(r.form)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="note" style="margin:0">${z?esc(z[3])+'. ':''}${when?'Updated '+esc(when)+'. ':''}${TBL.err?esc(TBL.err):''}</div>`;
+  }
+  return header('Tables',cur?cur.name:club)+`<main>${body}<div style="text-align:center"><button class="linkbtn" data-act="tblRefresh" ${TBL.busy?'disabled':''}>${TBL.busy?'Loading…':'Refresh'}</button></div></main>`;
+}
+
 /* ---------- links: official sites, shops and supporters' groups ---------- */
 /* Only addresses that have been checked are listed here. Anything missing falls back to a web search for the official page. */
 const CLUB_LINKS={
@@ -2883,6 +2935,8 @@ function actExtra(a,ds,el){
 
     case 'pstat':V.sheet={kind:'pstat',d:{id:ds.id}};renderSheet();return true;
     case 'settings':V.sheet={kind:'settings',d:{}};renderSheet();return true;
+    case 'tblPick':V.tbl=ds.v;render();return true;
+    case 'tblRefresh':tablesLoad(true);return true;
     case 'fbOpen':V.sheet={kind:'feedback',d:{rating:0,kind:'',msg:'',reply:'',err:'',busy:false,sent:false,from:V.tab==='pro'?'history':V.tab}};renderSheet();return true;
     case 'fbRate':{const d=V.sheet.d;d.rating=+ds.v===d.rating?0:+ds.v;renderSheet();return true}
     case 'fbKind':{const d=V.sheet.d;d.kind=d.kind===ds.v?'':ds.v;renderSheet();return true}
@@ -3240,6 +3294,7 @@ function render(){
   if(V.ts&&S.matches.find(x=>x.id===V.ts))body=teamSheetView(S.matches.find(x=>x.id===V.ts));
   else if(V.tab==='team')body=teamView();
   else if(V.tab==='links')body=linksView();
+  else if(V.tab==='tables')body=tablesView();
   else if(V.tab==='stats')body=statsView();
   else if(V.tab==='pro')body=proView();
   else if(V.tab==='history')body=historyView();
