@@ -127,7 +127,8 @@ a.prow{text-decoration:none;color:inherit}
 .tabs button{min-width:0;padding-left:2px;padding-right:2px}
 .home{display:flex;flex-direction:column;gap:clamp(6px,1.3vh,12px);padding-top:clamp(6px,1.2vh,12px)}
 .home h2{margin:0 0 3px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
-.home .clg{width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:6px}
+.home .crest.badge{background:#fff;border:0;border-radius:10px;padding:3px;box-sizing:border-box;box-shadow:0 0 0 1.5px rgba(255,255,255,.5)}.crest.badge img{width:100%;height:100%;object-fit:contain;display:block}
+.clg{width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:6px}
 .sqh{margin:12px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
 .sqr{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line,#e3e6ec)}
 .sqn{width:22px;text-align:right;font-weight:800;color:var(--mute);font-size:14px}
@@ -723,7 +724,12 @@ function applyTheme(){
   r.setProperty('--act',(ac&&ac.length===2)||(t.primary&&t.primary.toLowerCase()!=='#071d49')?p:'#071d49');r.setProperty('--p',p);r.setProperty('--pt',textOn(p));r.setProperty('--s',s);r.setProperty('--st',textOn(s));
   const mt=document.querySelector('meta[name=theme-color]');if(mt)mt.setAttribute('content',p);
 }
-const crest=(t,px)=>`<span class="crest" style="width:${px}px;height:${px}px;font-size:${Math.round(px*.38)}px${t.primary?`;background:${t.primary};color:${textOn(t.primary)};border-color:${t.secondary||'#fff'}`:''}">${esc((t.name||'T').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</span>`;
+/* a professional club shows its real badge (white tile so it reads on any header colour); anything else keeps the coloured initials */
+const crest=(t,px)=>{
+  const c=t&&t.proTeam?(REF.clubs.find(x=>x.slug===t.proTeam)||null):null;
+  if(t&&t.proTeam&&!REF.clubs.length&&!REF.busy&&Date.now()-(REF.tried||0)>60000){REF.tried=Date.now();setTimeout(()=>refLoad(),0)}
+  if(c&&c.logo_url)return `<span class="crest badge" style="width:${px}px;height:${px}px"><img src="${esc(c.logo_url)}" alt="${esc(c.name)} badge" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('nobadge');this.remove()"></span>`;
+  return `<span class="crest" style="width:${px}px;height:${px}px;font-size:${Math.round(px*.38)}px${t.primary?`;background:${t.primary};color:${textOn(t.primary)};border-color:${t.secondary||'#fff'}`:''}">${esc((t.name||'T').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase())}</span>`};
 
 /* ---------- views ---------- */
 function syncBadge(){
