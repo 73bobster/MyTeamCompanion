@@ -2462,7 +2462,7 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='95';
+const APP_V='96';
 const REFKEY='myteamcompanion-ref-v2';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 async function refLoad(force){
@@ -2724,7 +2724,7 @@ const CLUB_LINKS={
  "motherwell":{site:"https://www.motherwellfc.co.uk"},
  "newcastle-united":{site:"https://www.nufc.co.uk"},
  "nottingham-forest":{site:"https://www.nottinghamforest.co.uk"},
- "rangers":{site:"https://www.rangers.co.uk",fans:[["Club 1872","https://club1872.co.uk"]]},
+ "rangers":{site:"https://www.rangers.co.uk",shop:"https://shop.rangers.co.uk/",fans:[["Club 1872","https://club1872.co.uk"]],merch:[["Copland Streetwear","https://www.coplandstreetwear.co.uk/"],["North Section","https://www.northsection.co.uk/collections/rangers"]],media:[["RangersReview","https://www.rangersreview.co.uk/"],["Follow Follow","https://www.followfollow.com/"],["Edmiston Drive","https://www.edmistondrive.co.uk/"]],zines:[["Heart and Hand","https://www.heartandhand.co.uk/"]]},
  "sunderland":{site:"https://www.safc.com"},
  "tottenham-hotspur":{site:"https://www.tottenhamhotspur.com",shop:"https://shop.tottenhamhotspur.com"}
 };
@@ -2744,12 +2744,12 @@ function linksView(){
   ${row(name+' on BBC Sport','https://www.bbc.co.uk/sport/football/teams/'+encodeURIComponent(t.proTeam||''),'Fixtures, results and news from the BBC')}
   <h2>Club shop and merchandise</h2>
   ${L.shop?row(name+' official shop',L.shop):find(name+' official shop',name+' official club shop')}
-  ${find('Unofficial '+name+' fan merchandise',name+' unofficial fan merchandise')}
+  ${(L.merch||[]).map(f=>row(f[0],f[1])).join('')}${find('Unofficial '+name+' fan merchandise',name+' unofficial fan merchandise')}
   <h2>Supporters' clubs</h2>
   ${fans}
   <h2>Fan media</h2>
-  ${find(name+' fan sites and forums',name+' fan site forum')}
-  ${find(name+' fanzines and podcasts',name+' fanzine podcast')}
+  ${(L.media||[]).map(f=>row(f[0],f[1])).join('')}${find(name+' fan sites and forums',name+' fan site forum')}
+  ${(L.zines||[]).map(f=>row(f[0],f[1])).join('')}${find(name+' fanzines and podcasts',name+' fanzine podcast')}
   <h2>Leagues and media</h2>
   ${body}${row('UEFA','https://www.uefa.com')}
   ${row('BBC Sport football','https://www.bbc.co.uk/sport/football')}
