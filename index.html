@@ -65,6 +65,9 @@ header.top .bmk{display:inline-flex;align-items:center;justify-content:center;wi
 .prow{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:8px}
 .prow .num{width:44px;height:44px;border-radius:12px;background:var(--p);color:var(--pt);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;flex:none}
 .prow .nm{flex:1;min-width:0;font-weight:600}
+.prow .num.lvtile{flex-direction:column;gap:1px;background:#fff;color:#d62839;border:2px solid #d62839;font-size:15px;line-height:1}.prow .num.lvtile span{font-size:10px;font-weight:800}
+.lvcard{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #d62839;border-radius:14px;padding:10px 12px;cursor:pointer}.lvcard .mn{font-weight:800;color:#d62839;min-width:46px;font-size:13px}.lvcard .mt{flex:1;min-width:0;font-weight:700}.lvcard .sc{font-weight:800;font-size:20px}.lvcard small{display:block;color:var(--mute);font-weight:400;font-size:12px}
+@keyframes lvp{50%{opacity:.25}}.lvdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d62839;margin-right:5px;animation:lvp 1.2s infinite}.lt tr.lv td:first-child{box-shadow:inset 3px 0 #d62839}
 .prow .nm small{display:block;color:var(--mute);font-weight:400;font-size:13px}
 .prow .num.dt{width:54px;height:auto;min-height:60px;padding:5px 0;flex-direction:column;gap:1px;line-height:1.1;font-size:inherit}
 .prow .num.dt b{font-size:19px;font-weight:800}
@@ -2426,7 +2429,7 @@ function homeView(){
   const comp=lg?lg.toLowerCase().replace(/\s+/g,'-'):'';
   /* fetch what is missing, at most once a minute, so a failed load cannot loop */
   if(!V.homeKick||Date.now()-V.homeKick>60000){V.homeKick=Date.now();setTimeout(()=>{tablesLoad();if(t.proTeam)proLoad()},0)}
-  const T=TBL.list.find(x=>x.comp===comp);
+  const T=lvTable(TBL.list.find(x=>x.comp===comp));
   /* the table: me with two above and two below; at the top or bottom, five others on the side that has them */
   let tbl='<div class="card note" style="margin:0">'+(TBL.busy?'Loading the table…':'The league table is not available yet.')+'</div>',place='';
   if(T){
@@ -2451,8 +2454,11 @@ function homeView(){
     return `<div class="tile ${R.res}" title="${esc(opp)}"><small>${side==='home'?'H':'A'} · ${esc(new Date(m.match_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}))}</small><b>${esc(ab(opp))}</b><span class="sc">${R.us}–${R.them}</span><div class="bar"></div></div>`}).join('');
   const fxT=nxt.map(proRow).join('');
   const empty=(txt)=>`<div class="card note" style="margin:0">${(!PRO.at&&PRO.busy)?'Loading…':txt}</div>`;
+  const lo=lvOwn();
+  const lvCard=lo?`<div class="lvcard" data-act="proLive" data-id="${lo.fixture_id}"><span class="mn">${lvIs(lo)?'<i class="lvdot"></i>':''}${esc(lvLbl(lo))}</span><div class="mt">${esc(lo.home_name)} v ${esc(lo.away_name)}<small>${lvIs(lo)?'Live · tap for goals and cards':'Full time · tap for goals and cards'}</small></div><span class="sc">${lo.home_goals==null?0:lo.home_goals}–${lo.away_goals==null?0:lo.away_goals}</span></div>`:'';
   return header('Home')+`<main class="home">
-  <div><h2>${esc(lg||'League')}${place?' · '+place:''}</h2>${tbl}</div>
+  ${lvCard}
+  <div><h2>${esc(lg||'League')}${place?' · '+place:''}${T&&T.provisional?' <small style="color:#d62839;font-weight:700">· live</small>':''}</h2>${tbl}</div>
   <div><h2>Last ${fin.length||6} league results</h2>${fin.length?`<div class="tiles" style="grid-template-columns:repeat(6,1fr)">${resT}</div>`:empty('No league results yet.')}</div>
   <div><h2>Next fixtures</h2>${nxt.length?`${fxT}`:empty('No league fixtures listed yet.')}</div>
   <div class="note" style="text-align:center;margin:0">Version ${APP_V}${REF.clubs.length?' · '+REF.clubs.length+' club badges':' · badges not loaded'+(REF.busy?' (loading…)':REF.err?' ('+esc(String(REF.err).slice(0,80))+')':CLOUD&&DB.user?' (no error, '+(DB.user.guest?'guest':'signed in')+')':' (offline mode)')}</div>
@@ -2462,15 +2468,92 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='98';
-const REFKEY='myteamcompanion-ref-v2';
+const APP_V='99';
+const REFKEY='myteamcompanion-ref-v3';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
+/* ---------- live games: score, minute and events from the football-data loader (via /api/live), polled while a game is on ---------- */
+const LV={fx:[],ev:[],at:0,busy:false,err:'',sig:''};
+const LV_ON=['1H','HT','2H','ET','BT','P','INT','LIVE','SUSP'],LV_FIN=['FT','AET','PEN'];
+const lvIs=f=>LV_ON.includes(f.status_short),lvDone=f=>LV_FIN.includes(f.status_short);
+const lvLbl=f=>{const s=f.status_short;
+  if(s==='HT')return 'HT';if(s==='BT')return 'Break';if(s==='P')return 'Pens';if(s==='INT')return 'Paused';if(s==='SUSP')return 'Suspended';
+  if(s==='FT')return 'FT';if(s==='AET')return 'AET';if(s==='PEN')return 'FT (pens)';
+  return f.elapsed!=null?f.elapsed+(f.extra?'+'+f.extra:'')+"'":'Live'};
+const lvDay=d=>Math.round(Date.parse(String(d).slice(0,10))/864e5);
+/* the live fixture for a feed match: same two clubs on the same day (or the day either side, for late kick-offs) */
+const lvFor=m=>{if(!m)return null;if(m._lf)return m._lf;return LV.fx.find(f=>(lvIs(f)||lvDone(f))&&sameClub(f.home_name,m.home)&&sameClub(f.away_name,m.away)&&Math.abs(lvDay(f.kickoff)-lvDay(m.match_date))<=1)||null};
+const lvClubId=slug=>{const c=REF.clubs.find(x=>x.slug===slug);return c&&c.ref_id!=null?Number(c.ref_id):null};
+/* the followed club's game that is on now (or has just finished) */
+function lvOwn(){
+  const t=S&&S.team;if(!t||!t.proTeam)return null;const id=lvClubId(t.proTeam);
+  const mine=LV.fx.filter(f=>(id!=null&&(Number(f.home_club_id)===id||Number(f.away_club_id)===id))||sameClub(f.home_name,t.proClub||t.name)||sameClub(f.away_name,t.proClub||t.name));
+  return mine.find(lvIs)||mine.find(lvDone)||null;
+}
+/* live events for a fixture, in the shape the match sheet already uses */
+function lvEvents(f){
+  const out=[];
+  for(const e of LV.ev.filter(x=>Number(x.fixture_id)===Number(f.fixture_id))){
+    const side=Number(e.club_id)===Number(f.home_club_id)?'home':'away',t=String(e.type||'').toLowerCase(),d=String(e.detail||'');
+    const base={seq:e.seq,minute:e.minute+(e.extra?'+'+e.extra:''),side,player:e.player_name||'',assist:e.assist_name||'',detail:''};
+    if(t==='goal'){if(/missed/i.test(d))continue;out.push(Object.assign(base,{type:/own/i.test(d)?'own_goal':'goal',detail:/penalty/i.test(d)?'penalty':''}))}
+    else if(t==='card')out.push(Object.assign(base,{type:/red/i.test(d)?'red':'yellow',detail:/second/i.test(d)?'second yellow':''}));
+    else if(t==='subst')out.push(Object.assign(base,{type:'sub',on_player:e.assist_name||''}));
+  }
+  return out;
+}
+const lvAdd=(r,f,gf,ga)=>{r.p++;r.gf+=gf;r.ga+=ga;r.gd=r.gf-r.ga;if(gf>ga){r.w++;r.pts+=3}else if(gf===ga){r.d++;r.pts+=1}else r.l++};
+const LV_COMP=[[/premier league/,39],[/^championship$|english championship/,40],[/league one/,41],[/league two/,42],[/scottish.*premiership|premiership/,179],[/scottish.*championship/,180],[/scottish.*league one/,183],[/scottish.*league two/,184],[/champions/,2],[/europa/,3],[/conference/,848]];
+function lvCompId(T){const k=String(T.comp||'').replace(/-/g,' ').toLowerCase(),n=String(T.name||'').toLowerCase();
+  const sc=/scot/.test(k+' '+n);for(const [re,id] of LV_COMP){if(id>=39&&id<=42&&sc)continue;if(re.test(k)||re.test(n))return id}return null}
+/* the table as it would stand with the scores right now: in-play games count, and so do games that finished after the table was last fetched */
+function lvTable(T){
+  if(!T||!T.rows||!LV.fx.length)return T;
+  const cid=lvCompId(T);if(!cid)return T;
+  const fetched=T.fetched_at?Date.parse(T.fetched_at):0;
+  const rows=T.rows.map(r=>Object.assign({},r)),live={};let n=0;
+  for(const f of LV.fx){
+    if(Number(f.competition_id)!==cid||f.home_goals==null||f.away_goals==null)continue;
+    if(!(lvIs(f)||(lvDone(f)&&Date.parse(f.updated_at)>fetched)))continue;
+    const h=rows.find(r=>sameClub(r.team,f.home_name)),a=rows.find(r=>sameClub(r.team,f.away_name));
+    if(!h||!a||h===a)continue;
+    lvAdd(h,f,f.home_goals,f.away_goals);lvAdd(a,f,f.away_goals,f.home_goals);
+    if(lvIs(f)){h.live=1;a.live=1}n++;
+  }
+  if(!n)return T;
+  const idx=new Map(rows.map((r,i)=>[r,i]));
+  rows.sort((x,y)=>y.pts-x.pts||y.gd-x.gd||y.gf-x.gf||idx.get(x)-idx.get(y));
+  rows.forEach((r,i)=>{r.pos=i+1});
+  return Object.assign({},T,{rows,provisional:true});
+}
+const lvPlaying=()=>LV.fx.some(lvIs);
+/* a followed-club game is about to start, on, or just over */
+function lvSoon(){
+  const now=Date.now();
+  return (PRO.matches||[]).some(m=>{if(!m.match_date||!m.kickoff||m.status==='finished'||m.status==='other')return false;const k=Date.parse(m.match_date+'T'+String(m.kickoff).slice(0,5)+':00');return k&&now>k-1200000&&now<k+12600000});
+}
+async function lvLoad(){
+  if(LV.busy||document.hidden||!CLOUD||!S||!S.team||!S.team.proTeam)return;
+  LV.busy=true;
+  try{
+    const r=await fetch('/api/live',{cache:'no-store'});
+    if(!r.ok)throw new Error('live '+r.status);
+    const j=await r.json();
+    LV.fx=j.fixtures||[];LV.ev=j.events||[];LV.at=Date.now();LV.err='';
+    const sig=JSON.stringify([LV.fx.map(f=>[f.fixture_id,f.status_short,f.elapsed,f.home_goals,f.away_goals]),LV.ev.length]);
+    if(sig!==LV.sig){LV.sig=sig;if(['home','pro','tables','history'].includes(V.tab)&&!V.sheet)render()}
+  }catch(e){LV.err=String((e&&e.message)||e)}
+  LV.busy=false;
+}
+function lvTick(){if(lvPlaying()||lvSoon()||!LV.at||Date.now()-LV.at>300000)lvLoad()}
+setInterval(lvTick,30000);
+setTimeout(lvLoad,4000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)lvLoad()});
 async function refLoad(force){
   if(!CLOUD||!DB.user||REF.busy)return;
   if(!force&&REF.clubs.length&&REF.at&&Date.now()-REF.at<43200000)return; /* an empty list is never treated as fresh */
   REF.busy=true;
   try{
-    REF.clubs=await rest('GET','/pro_clubs?select=slug,name,venue,city,capacity,founded,logo_url')||[];REF.memo={};if(!REF.clubs.length){REF.err='no clubs returned';REF.busy=false;return}REF.at=Date.now();
+    REF.clubs=await rest('GET','/pro_clubs?select=slug,ref_id,name,venue,city,capacity,founded,logo_url')||[];REF.memo={};if(!REF.clubs.length){REF.err='no clubs returned';REF.busy=false;return}REF.at=Date.now();
     try{localStorage.setItem(REFKEY,JSON.stringify({clubs:REF.clubs,at:REF.at}))}catch(e){}
     render();
   REF.err='';
@@ -2564,7 +2647,7 @@ function tablesView(){
   /* at most two: the club's own league, and the one European competition it is in */
   const dom=TBL.list.find(T=>T.comp===home),eu=TBL.list.find(T=>euro.includes(T.comp)&&T.rows.some(r=>sameClub(r.team,club)));
   const list=[dom,eu].filter(Boolean);
-  const cur=list.find(T=>T.comp===V.tbl)||list[0];
+  const cur=lvTable(list.find(T=>T.comp===V.tbl)||list[0]);
   const when=cur&&cur.fetched_at?new Date(cur.fetched_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   let body;
   if(!cur){
@@ -2575,9 +2658,9 @@ function tablesView(){
     const fm=f=>`<span class="fm">${(f||[]).slice(-5).map(x=>`<i class="${x}">${x}</i>`).join('')}</span>`;
     body=`${list.length>1?`<div class="chips small" style="margin-bottom:8px">${list.map(T=>`<button class="${T.comp===cur.comp?'on':''}" data-act="tblPick" data-v="${esc(T.comp)}">${esc(T.name)}</button>`).join('')}</div>`:''}
     <div class="lt-wrap"><table class="lt"><thead><tr><th>#</th><th class="tm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>GF</th><th>GA</th><th>Form</th></tr></thead><tbody>
-    ${cur.rows.map(r=>`<tr class="${sameClub(r.team,club)?'me':''} ${zc(r.pos)}"><td>${r.pos}</td><td class="tm">${clubLogo(r.team,16)}${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td><td>${r.gf}</td><td>${r.ga}</td><td>${fm(r.form)}</td></tr>`).join('')}
+    ${cur.rows.map(r=>`<tr class="${sameClub(r.team,club)?'me':''} ${zc(r.pos)} ${r.live?'lv':''}"><td>${r.pos}</td><td class="tm">${clubLogo(r.team,16)}${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td><td>${r.gf}</td><td>${r.ga}</td><td>${fm(r.form)}</td></tr>`).join('')}
     </tbody></table></div>
-    <div class="note" style="margin:0">${z?esc(z[3])+'. ':''}${when?'Updated '+esc(when)+'. ':''}${TBL.err?esc(TBL.err):''}</div>`;
+    <div class="note" style="margin:0">${cur.provisional?'<b style="color:#d62839">Live:</b> includes games in play and just finished, so places can change. ':''}${z?esc(z[3])+'. ':''}${when?'Updated '+esc(when)+'. ':''}${TBL.err?esc(TBL.err):''}</div>`;
   }
   return header('Tables',cur?cur.name:club)+`<main>${body}<div style="text-align:center"><button class="linkbtn" data-act="tblRefresh" ${TBL.busy?'disabled':''}>${TBL.busy?'Loading…':'Refresh'}</button></div></main>`;
 }
@@ -3407,9 +3490,9 @@ function proResult(m,side){
   return {us,them,res,pen,et:!!(p&&p.et)};
 }
 function proRow(m){
-  const fin=m.status==='finished';
+  const fin=m.status==='finished',lf=fin?null:lvFor(m);
   const tm=(m.teams||[]).map(t=>PROTEAMS[t]||t).join(' & ');
-  return `<div class="prow" data-act="proOpen" data-id="${esc(proKey(m))}" style="cursor:pointer">${fin?`<div class="num" style="font-size:17px;width:54px">${esc(m.home_goals+'–'+m.away_goals)}</div>`:proDateTile(m)}<div class="nm">${esc(m.home)} v ${esc(m.away)}<small>${esc(proComp(m))} · ${esc(proDate(m.match_date))}${m.status==='live'?' · live':m.status==='other'?' · '+esc(m.raw_status||''):''}</small></div><span style="color:var(--mute)">›</span></div>`;
+  return `<div class="prow" data-act="proOpen" data-id="${esc(proKey(m))}" style="cursor:pointer">${fin?`<div class="num" style="font-size:17px;width:54px">${esc(m.home_goals+'–'+m.away_goals)}</div>`:lf?`<div class="num lvtile" style="width:54px"><b>${lf.home_goals==null?0:lf.home_goals}–${lf.away_goals==null?0:lf.away_goals}</b><span>${esc(lvLbl(lf))}</span></div>`:proDateTile(m)}<div class="nm">${esc(m.home)} v ${esc(m.away)}<small>${esc(proComp(m))} · ${esc(proDate(m.match_date))}${m.status==='live'?' · live':m.status==='other'?' · '+esc(m.raw_status||''):''}</small></div><span style="color:var(--mute)">›</span></div>`;
 }
 const proSideKey=n=>clubKey(n);
 function proRecorded(pm){return S.matches.some(x=>x.date===pm.match_date&&[pm.home,pm.away].some(n=>{const a=proSideKey(n),b=proSideKey(x.opp);return a&&b&&(a.includes(b)||b.includes(a))}))}
@@ -3434,7 +3517,8 @@ function proResultCard(m){
   return `<div class="prow" data-act="proOpen" data-id="${esc(proKey(m))}" style="cursor:pointer"><div class="num" style="background:${col};color:#fff">${res}</div><div class="nm">${esc(m.home)} ${m.home_goals}–${m.away_goals} ${esc(m.away)}<small>${esc(proComp(m))} · ${esc(proDate(m.match_date))}${R.pen?' · '+(R.et?'after extra time, ':'')+(res==='W'?'won ':'lost ')+R.pen.us+'–'+R.pen.them+' on penalties':''}</small></div><span style="color:var(--mute)">›</span></div>`;
 }
 function proDetailView(m){
-  const d=PRO.detail[proKey(m)];const fin=m.status==='finished';
+  const fin=m.status==='finished',lf=fin?null:lvFor(m),lvOn=!!(lf&&(lvIs(lf)||lvDone(lf)));
+  const d0=PRO.detail[proKey(m)],d=lvOn?{players:(d0&&d0.players)||[],events:lvEvents(lf)}:d0;
   const meta=[proComp(m),proDate(m.match_date)].filter(Boolean).join(' · ');
   const facts=[['Venue',m.venue],['Attendance',m.attendance?m.attendance.toLocaleString('en-GB'):''],['Referee',m.referee],['Round / matchday',proRound(m)]].filter(f=>f[1]);
   const factsHtml=facts.length?`<div class="card" style="padding:6px 14px">${facts.map(f=>`<div class="irow"><span class="stat" style="width:130px">${f[0]}</span><b class="fv">${esc(f[1])}</b></div>`).join('')}</div>`:'';
@@ -3444,8 +3528,8 @@ function proDetailView(m){
   const R=fin&&m.home_goals!=null&&S.team&&S.team.proTeam?proResult(m,proClubSide(m)):null;
   const resLbl=R?(R.res==='W'?'Win':R.res==='L'?'Loss':'Draw'):'';
   const resCol=R?(R.res==='W'?'var(--ok)':R.res==='L'?'var(--bad)':'var(--warn)'):'';
-  const stTxt=fin?(pn&&pn.et?'After extra time':'Full time'):m.status==='live'?'Live':m.status==='other'?esc(m.raw_status||'Not played'):'Kick-off '+esc(String(m.kickoff||'').slice(0,5)||'TBC');
-  const hero=`<div class="hero">${R?`<span class="res" style="background:${resCol};color:#fff;margin-right:6px">${resLbl}</span>`:''}<span class="res"${R?' style="background:var(--mute);color:#fff"':''}>${stTxt}</span><div class="big">${fin?`${m.home_goals} – ${m.away_goals}`:'v'}</div>${pn?`<div class="pens">${esc(nm(pn.winner))} won ${pn.winner==='home'?pn.home:pn.away}–${pn.winner==='home'?pn.away:pn.home} on penalties</div>`:''}<div style="font-weight:700">${esc(m.home)} v ${esc(m.away)}</div><div class="meta">${esc(meta)}</div></div>${factsHtml}`;
+  const stTxt=fin?(pn&&pn.et?'After extra time':'Full time'):lvOn?(lvIs(lf)?'● '+lvLbl(lf):lvLbl(lf)):m.status==='live'?'Live':m.status==='other'?esc(m.raw_status||'Not played'):'Kick-off '+esc(String(m.kickoff||'').slice(0,5)||'TBC');
+  const hero=`<div class="hero">${R?`<span class="res" style="background:${resCol};color:#fff;margin-right:6px">${resLbl}</span>`:''}<span class="res"${R?' style="background:var(--mute);color:#fff"':''}>${stTxt}</span><div class="big">${fin?`${m.home_goals} – ${m.away_goals}`:lvOn?`${lf.home_goals==null?0:lf.home_goals} – ${lf.away_goals==null?0:lf.away_goals}`:'v'}</div>${pn?`<div class="pens">${esc(nm(pn.winner))} won ${pn.winner==='home'?pn.home:pn.away}–${pn.winner==='home'?pn.away:pn.home} on penalties</div>`:''}<div style="font-weight:700">${esc(m.home)} v ${esc(m.away)}</div><div class="meta">${esc(meta)}</div></div>${factsHtml}`;
   if(!d)return hdr+`<main>${hero}${PRO.err?`<div class="err">${esc(PRO.err)}</div>`:''}${fin?`<div class="empty">${PRO.busy?'<b>Loading…</b>':'<b>Detail not on this device</b>Connect to the internet to load goals, cards and line-ups.'}</div>`:'<div class="empty">Line-ups and events appear after the game.</div>'}</main>`;
   const ev=d.events;
   const row=(e,txt)=>`<div class="irow"><b>${e.minute}'</b><span>${txt}</span></div>`;
@@ -3460,10 +3544,11 @@ function proDetailView(m){
     return `<div class="card" style="padding:6px 14px"><div class="lbl" style="margin-top:8px"><b style="color:var(--ink)">${esc(nm(s))}</b>${fm?' · '+esc(fm):''}${mg?' · '+esc(mg):''}</div>${ps.filter(p=>p.starter).map(line).join('')}<div class="lbl" style="margin-top:10px">Substitutes</div>${ps.filter(p=>!p.starter).map(line).join('')}</div>`;
   };
   const lu=side('home')+side('away');
-  return hdr+`<main>${hero}${PRO.err?`<div class="err">${esc(PRO.err)}</div>`:''}${sec('Goals',goals)}${sec('Cards',cards)}${sec('Substitutions',subs)}${lu?`<h2>Line-ups</h2><div class="cols">${lu}</div>`:''}${!ev.length&&!d.players.length?'<div class="empty">No detail was published for this game.</div>':''}</main>`;
+  return hdr+`<main>${hero}${PRO.err?`<div class="err">${esc(PRO.err)}</div>`:''}${sec('Goals',goals)}${sec('Cards',cards)}${sec('Substitutions',subs)}${lu?`<h2>Line-ups</h2><div class="cols">${lu}</div>`:''}${!ev.length&&!d.players.length?(lvOn?'<div class="empty">No goals or cards yet. This page updates by itself.</div>':'<div class="empty">No detail was published for this game.</div>'):''}</main>`;
 }
 function proView(){
-  const m=PRO.ref&&PRO.matches.find(x=>proKey(x)===PRO.ref);
+  let m=PRO.ref&&PRO.matches.find(x=>proKey(x)===PRO.ref);
+  if(!m&&PRO.ref&&String(PRO.ref).startsWith('live:')){const f=LV.fx.find(x=>'live:'+x.fixture_id===PRO.ref);if(f)m={source:'live',source_ref:PRO.ref,teams:[],home:f.home_name,away:f.away_name,match_date:String(f.kickoff).slice(0,10),kickoff:'',comp:'',status:'live',_lf:f}}
   return m?proDetailView(m):historyView();
 }
 /* ---------- stats from the feed: season line-ups and goals for a followed club, matched to your squad by name ---------- */
@@ -3563,6 +3648,7 @@ function proAct(a,ds){
   switch(a){
     case 'proOpen':{const m=PRO.matches.find(x=>proKey(x)===ds.id);if(!m)return true;V.tab='pro';PRO.ref=ds.id;PRO.err='';V.top=1;render();if(m.status==='finished'&&!PRO.detail[ds.id])proDetail(m);return true}
     case 'proSquad':proFillSquad();return true;
+    case 'proLive':{const f=LV.fx.find(x=>String(x.fixture_id)===ds.id);if(!f)return true;const pm=PRO.matches.find(m=>lvFor(m)===f);V.tab='pro';PRO.ref=pm?proKey(pm):'live:'+f.fixture_id;PRO.err='';V.top=1;render();return true}
     case 'proClose':PRO.ref=null;PRO.err='';V.tab='history';V.top=1;render();return true;
   }
   return false;
