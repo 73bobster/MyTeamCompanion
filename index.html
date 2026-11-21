@@ -2454,12 +2454,14 @@ function homeView(){
   <div><h2>${esc(lg||'League')}${place?' · '+place:''}</h2>${tbl}</div>
   <div><h2>Last ${fin.length||6} league results</h2>${fin.length?`<div class="tiles" style="grid-template-columns:repeat(6,1fr)">${resT}</div>`:empty('No league results yet.')}</div>
   <div><h2>Next fixtures</h2>${nxt.length?`${fxT}`:empty('No league fixtures listed yet.')}</div>
+  <div class="note" style="text-align:center;margin:0">Version ${APP_V}${REF.clubs.length?' · '+REF.clubs.length+' club badges':' · badges not loaded'}</div>
   </main>`;
 }
 const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th','st','nd','rd'][v]||'th')};
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
+const APP_V='91';
 const REFKEY='myteamcompanion-ref-v1';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 async function refLoad(force){
@@ -3479,7 +3481,12 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){const m=M
 render();
 finishLink();
 if(CLOUD&&DB.user)setTimeout(()=>syncNow(),300);
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  /* look for a new version on every open and whenever the app comes back to the front; reload once when a new one takes over */
+  const had=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!reloaded){reloaded=true;location.reload()}});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update().catch(()=>{});document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update().catch(()=>{})})}).catch(()=>{});
+}
 window.__myteamcompanion={balancePlan,liveRows,describe,posMap,startPos,prefillLineup,placePlayers,formSlots,movePos,lineupDrop,poolFor,fmtN,nearestPos,minsPlayed,matchEnd,stats,matchSummary,applyRows,S:()=>S,DB:()=>DB,V,act,render,parseRoster,syncNow,rowsFor,pendingCount};
 })();
 </script>
