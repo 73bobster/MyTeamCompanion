@@ -173,9 +173,9 @@ textarea.fb{width:100%;min-height:110px;font:inherit;padding:10px;border:1px sol
 .cl i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .hb{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
 .hb .l{width:38%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hb .t{flex:1;display:flex;height:16px;background:var(--line);border-radius:4px;overflow:hidden}
-.hb .t span{display:block;height:100%}
-.hb .v{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}.hb .v i{font-style:normal;color:var(--mute);margin:0 3px;font-weight:400}
+.hb .t{flex:1;display:flex;height:18px;background:var(--line);border-radius:4px;overflow:hidden}
+.hb .t span{display:flex;align-items:center;justify-content:center;height:100%;overflow:hidden;font-size:11px;font-weight:800;line-height:1}
+.hb .v{width:30px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}.hb .v i{font-style:normal;color:var(--mute);margin:0 3px;font-weight:400}
 .stat{font-size:12px;color:var(--mute)}
 .ocrbox{border:2px dashed var(--line);border-radius:14px;padding:12px;margin-bottom:12px;text-align:center}
 .ocrbox input{display:none}
@@ -2468,7 +2468,7 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='100';
+const APP_V='101';
 const REFKEY='myteamcompanion-ref-v2';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 /* ---------- live games: score, minute and events from the football-data loader (via /api/live), polled while a game is on ---------- */
@@ -2969,7 +2969,7 @@ function chartsHtml(d,L){
   /* who makes the goals */
   const con=L.filter(o=>o.goals||o.assists).sort((a,b)=>(b.goals+b.assists)-(a.goals+a.assists)||b.goals-a.goals).slice(0,8);
   const mc=Math.max(1,...con.map(o=>o.goals+o.assists));
-  const contrib=con.length?`<div class="chart"><h3>Goals and assists</h3>${con.map(o=>`<div class="hb"><span class="l">${esc(o.name)}</span><span class="t"><span style="width:${(100*o.goals/mc).toFixed(1)}%;background:${B}"></span><span style="width:${(100*o.assists/mc).toFixed(1)}%;background:#f59e0b"></span></span><span class="v"><b style="color:${B}">${o.goals}</b><i>·</i><b style="color:#d97706">${o.assists}</b></span></div>`).join('')}<div class="cl"><span><i style="background:${B}"></i>Goals</span><span><i style="background:#f59e0b"></i>Assists</span></div></div>`:'';
+  const contrib=con.length?`<div class="chart"><h3>Goals and assists</h3>${con.map(o=>`<div class="hb"><span class="l">${esc(o.name)}</span><span class="t"><span style="width:${(100*o.goals/mc).toFixed(1)}%;background:${B};color:#fff">${o.goals||''}</span><span style="width:${(100*o.assists/mc).toFixed(1)}%;background:#f59e0b;color:#3b2300">${o.assists||''}</span></span><span class="v">${o.goals+o.assists}</span></div>`).join('')}<div class="cl"><span><i style="background:${B}"></i>Goals</span><span><i style="background:#f59e0b"></i>Assists</span></div></div>`:'';
   /* minutes played */
   const mn=L.filter(o=>o.mins>0).sort((a,b)=>b.mins-a.mins).slice(0,8),mm=Math.max(1,...mn.map(o=>o.mins));
   const mins=mn.length?`<div class="chart"><h3>Minutes played</h3>${mn.map(o=>`<div class="hb"><span class="l">${esc(o.name)}</span><span class="t"><span style="width:${(100*o.mins/mm).toFixed(1)}%;background:${B}"></span></span><span class="v" style="width:44px">${fmtN(o.mins)}</span></div>`).join('')}</div>`:'';
