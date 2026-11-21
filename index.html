@@ -2462,7 +2462,7 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='96';
+const APP_V='97';
 const REFKEY='myteamcompanion-ref-v2';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 async function refLoad(force){
@@ -2724,10 +2724,12 @@ const CLUB_LINKS={
  "motherwell":{site:"https://www.motherwellfc.co.uk"},
  "newcastle-united":{site:"https://www.nufc.co.uk"},
  "nottingham-forest":{site:"https://www.nottinghamforest.co.uk"},
- "rangers":{site:"https://www.rangers.co.uk",shop:"https://shop.rangers.co.uk/",fans:[["Club 1872","https://club1872.co.uk"]],merch:[["Copland Streetwear","https://www.coplandstreetwear.co.uk/"],["North Section","https://www.northsection.co.uk/collections/rangers"]],media:[["RangersReview","https://www.rangersreview.co.uk/"],["Follow Follow","https://www.followfollow.com/"],["Edmiston Drive","https://www.edmistondrive.co.uk/"]],zines:[["Heart and Hand","https://www.heartandhand.co.uk/"]]},
+ "rangers":{site:"https://www.rangers.co.uk",shop:"https://shop.rangers.co.uk/",official:[["Rangers Youth Development Company (RYDC)","https://www.rydc.co.uk"]],fans:[["Club 1872","https://club1872.co.uk"]],merch:[["Copland Streetwear","https://www.coplandstreetwear.co.uk/"],["North Section","https://www.northsection.co.uk/collections/rangers"]],media:[["RangersReview","https://www.rangersreview.co.uk/"],["Follow Follow","https://www.followfollow.com/"],["Edmiston Drive","https://www.edmistondrive.co.uk/"]],zines:[["Heart and Hand","https://www.heartandhand.co.uk/"]]},
  "sunderland":{site:"https://www.safc.com"},
  "tottenham-hotspur":{site:"https://www.tottenhamhotspur.com",shop:"https://shop.tottenhamhotspur.com"}
 };
+/* YouTube channels: a handle (@name) or a channel id */
+const YT={"aberdeen":"UCPBQJlE7us7HqJHmgQgWw3Q","accrington-stanley":"UCdiU0-drBxTVIhqSppSlqKA","annan-athletic":"@annanathleticfc","arsenal":"UCpryVRk_VDudG8SHXgWcG0w","aston-villa":"UCICNP0mvtr0prFwGUQIABfQ","ayr-united":"@ayrunitedfctv","barnet":"UCFJecvbDoJHQ-LSRYfI_52g","barnsley":"UCli5AB-aSOhTxiF0XZL58gQ","barrow":"UCSSXptGnm69KKWYTmFzP0wA","birmingham-city":"UCW1HMToSBse9JgQtsm2vMsQ","blackburn-rovers":"UCg4185wSpo9swSCSUEYUGTg","blackpool":"UCsmmd7s-vJZDzfXtCnLFYPA","bolton-wanderers":"UC6oTkDRXLR6GO53l44i0LFw","bournemouth":"UCeOCuVSSweaEj6oVtJZEKQw","bradford-city":"UCApKWe9YYSzSsZ0m5mLhl7g","brentford":"UCAalMUm3LIf504ItA3rqfug","brighton-and-hove-albion":"UCf-cpC9WAdOsas19JHipukA","bristol-city":"UCq_5VYwAoOvaL4lyGkwoboQ","bristol-rovers":"UC7dLKUWi0j2nvokTme6U4TQ","burnley":"UChvUXuSDeEFSQZS8GcPMtkg","burton-albion":"UCeNszHpOSL1pTKih-ea33JQ","cambridge-united":"UC_d0U8QyXIQ6M86zEzgsikw","cardiff-city":"UCfBVy8PAMwyNbac6D0Mk8gQ","celtic":"UCBN-bb-hE7jYlcp4exwXRsQ","charlton-athletic":"UC99akEsugT_s4tv_r2oxuOQ","colchester-united":"UCxNNr7jmuxIOeopgjDN6eUQ","coventry-city":"UCch_NWdo3JWKngAyO9XlycA","crystal-palace":"UCWB9N0012fG6bGyj486Qxmg","derby-county":"UCsOKCDfSRPwRhnbCqBO8CQw","doncaster-rovers":"UCllNtBaf35q89ML6S759O2Q","dundee-united":"UCk7C7hsc6ACmRtuFC_szpRQ","edinburgh-city":"@edinburghcitytv","everton":"UCtK4QAczAN2mt2ow_jlGinQ","exeter-city":"UCcGc3MFnRh4EI1Mv3CFX3Xg","forest-green-rovers":"UC9hiO4pAzKontGqMaakP-Fw","fulham":"UC2VLfz92cTT8jHIFOecC-LA","gillingham":"UCVzjJLBJPlt3UJBjvTGCeaw","heart-of-midlothian":"UCUMDz4A44VglneE3z1cBpAA","hibernian":"UCXKLs14yjDc5s7GJ1txkWxw","huddersfield-town":"UCPzdw2bYGCq6XfjEl61_iyw","ipswich-town":"UCjNwxJec96lMWgCXjEDhXgQ","kilmarnock":"UCEVINLCnqV-wlRg-wf_yMOw","leeds-united":"UCyQcJHDN4uYfPa1DHzKVSnw","leicester-city":"UCo6UhE0V2WmVY6k9G4seHUw","lincoln-city":"UCCLmGW0zE-1Gdagxg52G7sA","liverpool":"UC9LQwHZoucFT94I2h6JOcjw","livingston":"@livifcofficial","luton-town":"UCQoDXQ4Z2Ie3fTPrpjfT97w","manchester-city":"UCkzCjdRMrW2vXLx8mvPVLdQ","manchester-united":"UC6yW44UGJJBvYTlfC7CRg2Q","mansfield-town":"UCzxQ90H1Ctzf8cSaaIQUYsA","middlesbrough":"UCdXWsJhkXzx5hFJGcxjy_5Q","millwall":"UCPyLfjCylafteypHYuYvGbQ","milton-keynes-dons":"UCCuo5VY346080kg6D3Fz3-Q","motherwell":"UC5uMEPupAjUESVnMQ6gXw-Q","newcastle-united":"UCywGl_BPp9QhD0uAcP2HsJw","northampton-town":"UC3Gsny6v5RKGCN3VFbH5mGw","norwich-city":"UCzdkZv6--BWsUQ9rKUtQ1TQ","notts-county":"UCL0tl-6YAAdE6U4QKK_eb3A","oldham-athletic":"UCOvOgSUASukdu4DsGyA9WYg","plymouth-argyle":"UCfbUujPfGq9_20QyyInwXWA","port-vale":"UCmy6WUZcvvJFRDQ6cPvSu3A","portsmouth":"UC2pUjr6WECIEprPQxcD51OA","queens-park":"@queenspark1867","queens-park-rangers":"UCiegSQxYwraPK5efklvTO5w","reading":"UC2q3yt0x2irVXrLfeGPv-IA","sheffield-united":"UCVER_UoBt84YUrA6s402Q-g","shrewsbury-town":"UCuw4eS-62hDecs_cMO9vKGg","southampton":"UCxvXjfiIHQ2O6saVx_ZFqnw","st-johnstone":"@stjohnstoneofficial","st-mirren":"UC5MyVD6A1dbyq0-LoxDjxWQ","stoke-city":"UCmFPjHUFr0hyE6eFGvCm7IA","sunderland":"UCrw-7k6yJc0EMJdf-0BAkoQ","sutton-united":"UCNmEAqcEQyCVOY17c9Yj1DQ","swansea-city":"UCSMZZFBE92Yn-_XYdDiiANA","tottenham-hotspur":"UCEg25rdRZXg32iwai6N6l0w","tranmere-rovers":"UCNMoCVGAOprD7EIJlffOUPg","walsall":"UC18ZxZ80qKecD0bpimpyGcA","watford":"UCptKljTrbdMTgmuekGKhRug","west-bromwich-albion":"UCnDBNo0zLm11TTXPVXvEN1g","west-ham-united":"UCCNOsmurvpEit9paBOzWtUg","wigan-athletic":"UCwgHNCFB8INrM2o4xBhKsAg","wolverhampton-wanderers":"UCQ7Lqg5Czh5djGK6iOG53KQ","rangers":"@rangersfc"};
 /* Premier League club pages are keyed by a numeric club id */
 const PL_IDS={"arsenal":3,"aston-villa":7,"bournemouth":91,"brentford":94,"brighton-and-hove-albion":36,"burnley":90,"chelsea":8,"crystal-palace":31,"everton":11,"fulham":54,"ipswich-town":40,"leeds-united":2,"liverpool":14,"manchester-city":43,"manchester-united":1,"newcastle-united":4,"nottingham-forest":17,"sunderland":56,"tottenham-hotspur":6,"west-ham-united":21,"wolverhampton-wanderers":39};
 function linksView(){
@@ -2741,7 +2743,8 @@ function linksView(){
   return header('Links',name)+`<main>
   <h2 style="margin-top:0">Official club</h2>
   ${L.site?row(name+' official website',L.site):find(name+' official website',name+' official website')}
-  ${row(name+' on BBC Sport','https://www.bbc.co.uk/sport/football/teams/'+encodeURIComponent(t.proTeam||''),'Fixtures, results and news from the BBC')}
+  ${(L.official||[]).map(f=>row(f[0],f[1])).join('')}
+  ${YT[t.proTeam]?row(name+' on YouTube','https://www.youtube.com/'+(YT[t.proTeam][0]==='@'?YT[t.proTeam]:'channel/'+YT[t.proTeam]),'Official channel'):find(name+' on YouTube',name+' official YouTube channel')}
   <h2>Club shop and merchandise</h2>
   ${L.shop?row(name+' official shop',L.shop):find(name+' official shop',name+' official club shop')}
   ${(L.merch||[]).map(f=>row(f[0],f[1])).join('')}${find('Unofficial '+name+' fan merchandise',name+' unofficial fan merchandise')}
@@ -2751,6 +2754,7 @@ function linksView(){
   ${(L.media||[]).map(f=>row(f[0],f[1])).join('')}${find(name+' fan sites and forums',name+' fan site forum')}
   ${(L.zines||[]).map(f=>row(f[0],f[1])).join('')}${find(name+' fanzines and podcasts',name+' fanzine podcast')}
   <h2>Leagues and media</h2>
+  ${row(name+' on BBC Sport','https://www.bbc.co.uk/sport/football/teams/'+encodeURIComponent(t.proTeam||''),'Fixtures, results and news from the BBC')}
   ${body}${row('UEFA','https://www.uefa.com')}
   ${row('BBC Sport football','https://www.bbc.co.uk/sport/football')}
   ${row('Sky Sports football','https://www.skysports.com/football')}
