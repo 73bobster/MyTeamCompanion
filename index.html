@@ -2461,15 +2461,15 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='92';
-const REFKEY='myteamcompanion-ref-v1';
+const APP_V='93';
+const REFKEY='myteamcompanion-ref-v2';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 async function refLoad(force){
   if(!CLOUD||!DB.user||REF.busy)return;
-  if(!force&&REF.at&&Date.now()-REF.at<43200000)return;
+  if(!force&&REF.clubs.length&&REF.at&&Date.now()-REF.at<43200000)return; /* an empty list is never treated as fresh */
   REF.busy=true;
   try{
-    REF.clubs=await rest('GET','/pro_clubs?select=slug,name,venue,city,capacity,founded,logo_url')||[];REF.at=Date.now();REF.memo={};
+    REF.clubs=await rest('GET','/pro_clubs?select=slug,name,venue,city,capacity,founded,logo_url')||[];REF.memo={};if(!REF.clubs.length){REF.err='no clubs returned';REF.busy=false;return}REF.at=Date.now();
     try{localStorage.setItem(REFKEY,JSON.stringify({clubs:REF.clubs,at:REF.at}))}catch(e){}
     render();
   REF.err='';
@@ -2490,14 +2490,14 @@ const clubLogo=(name,px)=>{const c=refClub(name);return c&&c.logo_url?`<img clas
 async function refSquadLoad(slug){
   if(!CLOUD||!DB.user||!slug)return;
   const e=REF.sq[slug]||(REF.sq[slug]={pl:null,st:null,at:0,busy:false});
-  if(e.busy||(e.at&&Date.now()-e.at<43200000))return;
-  if(!e.pl){try{const o=JSON.parse(localStorage.getItem('myteamcompanion-sq-'+slug)||'null');if(o){e.pl=o.pl;e.st=o.st;e.at=o.at;if(Date.now()-e.at<43200000)return}}catch(x){}}
+  if(e.busy||(e.pl&&e.pl.length&&e.at&&Date.now()-e.at<43200000))return;
+  if(!e.pl){try{const o=JSON.parse(localStorage.getItem('myteamcompanion-sq-'+slug)||'null');if(o&&o.pl&&o.pl.length){e.pl=o.pl;e.st=o.st;e.at=o.at;if(Date.now()-e.at<43200000)return}}catch(x){}}
   e.busy=true;
   try{
     const pl=await rest('GET','/pro_squad?slug=eq.'+encodeURIComponent(slug)+'&select=season,ref_player_id,name,position,shirt,nationality,birth_date,height_cm,photo_url,on_loan&order=season.desc');
     const st=await rest('GET','/pro_player_stats?slug=eq.'+encodeURIComponent(slug)+'&select=season,comp_id,ref_player_id,appearances,starts,minutes,goals,assists,yellow,red,clean_sheets&order=season.desc');
     e.pl=pl||[];e.st=st||[];e.at=Date.now();
-    try{localStorage.setItem('myteamcompanion-sq-'+slug,JSON.stringify({pl:e.pl,st:e.st,at:e.at}))}catch(x){}
+    if(e.pl.length){try{localStorage.setItem('myteamcompanion-sq-'+slug,JSON.stringify({pl:e.pl,st:e.st,at:e.at}))}catch(x){}}
     render();
   }catch(x){}
   e.busy=false;
