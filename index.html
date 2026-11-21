@@ -2468,8 +2468,8 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='99';
-const REFKEY='myteamcompanion-ref-v3';
+const APP_V='100';
+const REFKEY='myteamcompanion-ref-v2';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 /* ---------- live games: score, minute and events from the football-data loader (via /api/live), polled while a game is on ---------- */
 const LV={fx:[],ev:[],at:0,busy:false,err:'',sig:''};
@@ -2479,14 +2479,16 @@ const lvLbl=f=>{const s=f.status_short;
   if(s==='HT')return 'HT';if(s==='BT')return 'Break';if(s==='P')return 'Pens';if(s==='INT')return 'Paused';if(s==='SUSP')return 'Suspended';
   if(s==='FT')return 'FT';if(s==='AET')return 'AET';if(s==='PEN')return 'FT (pens)';
   return f.elapsed!=null?f.elapsed+(f.extra?'+'+f.extra:'')+"'":'Live'};
+/* API-Football spells some clubs its own way */
+const LV_AL={ 'Dundee Utd': 'Dundee United', 'ST Mirren': 'St Mirren', 'ST Johnstone': 'St Johnstone', 'Heart Of Midlothian': 'Heart of Midlothian', 'Inverness CT': 'Inverness Caledonian Thistle', 'Partick': 'Partick Thistle', 'Morton': 'Greenock Morton', 'Ayr Utd': 'Ayr United', 'Hamilton Academical': 'Hamilton Academical', 'Dunfermline': 'Dunfermline Athletic', 'Newcastle': 'Newcastle United', 'Tottenham': 'Tottenham Hotspur', 'West Ham': 'West Ham United', 'Wolves': 'Wolverhampton Wanderers', 'Brighton': 'Brighton & Hove Albion', 'Leeds': 'Leeds United', 'Norwich': 'Norwich City', 'Leicester': 'Leicester City', 'Derby': 'Derby County', 'QPR': 'Queens Park Rangers', 'Blackburn': 'Blackburn Rovers', 'Bolton': 'Bolton Wanderers', 'Cardiff': 'Cardiff City', 'Coventry': 'Coventry City', 'Birmingham': 'Birmingham City', 'Charlton': 'Charlton Athletic', 'Lincoln': 'Lincoln City', 'Preston': 'Preston North End', 'Swansea': 'Swansea City', 'West Brom': 'West Bromwich Albion', 'Luton': 'Luton Town', 'Plymouth': 'Plymouth Argyle', 'Peterborough': 'Peterborough United', 'Sheffield Utd': 'Sheffield United', 'Wigan': 'Wigan Athletic', 'Rotherham': 'Rotherham United', 'Wycombe': 'Wycombe Wanderers', 'Huddersfield': 'Huddersfield Town', 'Ipswich': 'Ipswich Town', 'Hull City': 'Hull City', 'Brechin': 'Brechin City', 'Airdrie United': 'Airdrieonians', 'Queen\'s Park': 'Queen\'s Park', 'Cove Rangers': 'Cove Rangers', };
+const lvNm=n=>LV_AL[n]||n;
 const lvDay=d=>Math.round(Date.parse(String(d).slice(0,10))/864e5);
 /* the live fixture for a feed match: same two clubs on the same day (or the day either side, for late kick-offs) */
 const lvFor=m=>{if(!m)return null;if(m._lf)return m._lf;return LV.fx.find(f=>(lvIs(f)||lvDone(f))&&sameClub(f.home_name,m.home)&&sameClub(f.away_name,m.away)&&Math.abs(lvDay(f.kickoff)-lvDay(m.match_date))<=1)||null};
-const lvClubId=slug=>{const c=REF.clubs.find(x=>x.slug===slug);return c&&c.ref_id!=null?Number(c.ref_id):null};
 /* the followed club's game that is on now (or has just finished) */
 function lvOwn(){
-  const t=S&&S.team;if(!t||!t.proTeam)return null;const id=lvClubId(t.proTeam);
-  const mine=LV.fx.filter(f=>(id!=null&&(Number(f.home_club_id)===id||Number(f.away_club_id)===id))||sameClub(f.home_name,t.proClub||t.name)||sameClub(f.away_name,t.proClub||t.name));
+  const t=S&&S.team;if(!t||!t.proTeam)return null;const nm=t.proClub||t.name;
+  const mine=LV.fx.filter(f=>sameClub(f.home_name,nm)||sameClub(f.away_name,nm));
   return mine.find(lvIs)||mine.find(lvDone)||null;
 }
 /* live events for a fixture, in the shape the match sheet already uses */
@@ -2538,7 +2540,7 @@ async function lvLoad(){
     const r=await fetch('/api/live',{cache:'no-store'});
     if(!r.ok)throw new Error('live '+r.status);
     const j=await r.json();
-    LV.fx=j.fixtures||[];LV.ev=j.events||[];LV.at=Date.now();LV.err='';
+    LV.fx=(j.fixtures||[]).map(f=>Object.assign(f,{home_name:lvNm(f.home_name),away_name:lvNm(f.away_name)}));LV.ev=j.events||[];LV.at=Date.now();LV.err='';
     const sig=JSON.stringify([LV.fx.map(f=>[f.fixture_id,f.status_short,f.elapsed,f.home_goals,f.away_goals]),LV.ev.length]);
     if(sig!==LV.sig){LV.sig=sig;if(['home','pro','tables','history'].includes(V.tab)&&!V.sheet)render()}
   }catch(e){LV.err=String((e&&e.message)||e)}
@@ -2553,7 +2555,7 @@ async function refLoad(force){
   if(!force&&REF.clubs.length&&REF.at&&Date.now()-REF.at<43200000)return; /* an empty list is never treated as fresh */
   REF.busy=true;
   try{
-    REF.clubs=await rest('GET','/pro_clubs?select=slug,ref_id,name,venue,city,capacity,founded,logo_url')||[];REF.memo={};if(!REF.clubs.length){REF.err='no clubs returned';REF.busy=false;return}REF.at=Date.now();
+    REF.clubs=await rest('GET','/pro_clubs?select=slug,name,venue,city,capacity,founded,logo_url')||[];REF.memo={};if(!REF.clubs.length){REF.err='no clubs returned';REF.busy=false;return}REF.at=Date.now();
     try{localStorage.setItem(REFKEY,JSON.stringify({clubs:REF.clubs,at:REF.at}))}catch(e){}
     render();
   REF.err='';
