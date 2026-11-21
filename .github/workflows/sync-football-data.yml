@@ -1,0 +1,46 @@
+name: Sync football reference data
+# Copies club details (crests, venues), current squads and the last two seasons of player stats from the shared
+# football-data database into this app's own tables, once a day. Read-only on football-data; the app never connects to it.
+# Needs two repository secrets:
+#   FOOTBALL_DATABASE_URL  read-only role on Neon project football-data (winter-wave-38503340)
+#   NEON_DATABASE_URL      already set: owner role on this app's database
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 5 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: sync-football-data
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FOOTBALL_DATABASE_URL: ${{ secrets.FOOTBALL_DATABASE_URL }}
+      NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test importer/test/refdata.test.mjs
+      - name: Check secrets
+        run: |
+          if [ -z "$FOOTBALL_DATABASE_URL" ] || [ -z "$NEON_DATABASE_URL" ]; then echo "::warning::FOOTBALL_DATABASE_URL or NEON_DATABASE_URL is not set, nothing to do."; echo SKIP=1 >> "$GITHUB_ENV"; fi
+      - name: Export from football-data
+        if: env.SKIP != '1'
+        run: |
+          mkdir -p importer/out
+          x() { psql "$FOOTBALL_DATABASE_URL" -At -c "$2" > "importer/out/$1.json"; }
+          x clubs "select coalesce(json_agg(json_build_object('id',id,'name',name,'short_name',short_name,'code',code,'venue',venue_name,'city',venue_city,'capacity',venue_capacity,'founded',founded,'logo',logo_url,'is_national_team',is_national_team)),'[]') from ref.clubs"
+          x squad "select coalesce(json_agg(json_build_object('club_id',s.club_id,'season',s.season,'player_id',p.id,'name',coalesce(p.known_as,p.full_name),'name_key',p.name_key,'position',coalesce(s.position,p.position),'shirt',s.shirt_number,'nationality',p.nationality,'birth_date',p.birth_date,'height_cm',p.height_cm,'photo_url',p.photo_url,'on_loan',s.on_loan)),'[]') from ref.squad_entries s join ref.players p on p.id=s.player_id where s.season=(select max(x.season) from ref.squad_entries x where x.club_id=s.club_id) and s.season>=(select max(season)-1 from ref.squad_entries) and s.left_on is null"
+          x stats "select coalesce(json_agg(json_build_object('club_id',t.club_id,'season',cs.season,'comp_id',cs.competition_id,'player_id',t.player_id,'appearances',t.appearances,'starts',t.starts,'minutes',t.minutes,'goals',t.goals,'assists',t.assists,'yellow',t.yellow,'red',t.red,'clean_sheets',t.clean_sheets,'goals_conceded',t.goals_conceded,'saves',t.saves,'rating',t.rating)),'[]') from ref.player_season_stats t join ref.competition_seasons cs on cs.id=t.competition_season_id where cs.season>=(select max(season)-1 from ref.competition_seasons)"
+          x comps "select coalesce(json_agg(json_build_object('id',id,'name',name,'nation_code',nation_code)),'[]') from ref.competitions"
+      - name: Build and load
+        if: env.SKIP != '1'
+        run: |
+          node importer/refdata.mjs --clubs importer/out/clubs.json --squad importer/out/squad.json --stats importer/out/stats.json --comps importer/out/comps.json --out importer/out/refdata.sql | tee -a "$GITHUB_STEP_SUMMARY"
+          psql "$NEON_DATABASE_URL" -v ON_ERROR_STOP=1 -q -f importer/out/refdata.sql
+          psql "$NEON_DATABASE_URL" -c "notify pgrst, 'reload schema'" >/dev/null

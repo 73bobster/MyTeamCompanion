@@ -127,7 +127,15 @@ a.prow{text-decoration:none;color:inherit}
 .tabs button{min-width:0;padding-left:2px;padding-right:2px}
 .home{display:flex;flex-direction:column;gap:clamp(6px,1.3vh,12px);padding-top:clamp(6px,1.2vh,12px)}
 .home h2{margin:0 0 3px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
-.home .lt-wrap{margin:0}.home .lt{font-size:12.5px}
+.home .clg{width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:6px}
+.sqh{margin:12px 0 4px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.sqr{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line,#e3e6ec)}
+.sqn{width:22px;text-align:right;font-weight:800;color:var(--mute);font-size:14px}
+.sqp{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#e8ebf1;flex:none}
+.sqr .nm{flex:1;min-width:0;font-weight:700}.sqr .nm small{display:block;font-weight:500;color:var(--mute);font-size:12px}
+.sqs{display:flex;gap:0}.sqs b{width:36px;text-align:center;font-size:14px}
+.sqhead{display:flex;justify-content:flex-end}.sqhead .sqs b{font-size:11px;color:var(--mute);font-weight:700}
+.lt-wrap{margin:0}.home .lt{font-size:12.5px}
 .home .lt th,.home .lt td{padding:clamp(3px,.8vh,6px) 3px}
 .home .lt .tm{min-width:0;max-width:104px;overflow:hidden;text-overflow:ellipsis}
 .home .lt td:first-child,.home .lt th:first-child{padding-left:5px;padding-right:4px}
@@ -2422,7 +2430,7 @@ function homeView(){
       a=Math.max(1,a);b=Math.min(n,b);
       const rows=T.rows.slice(a-1,b);
       place=ordinal(i)+' of '+n;
-      tbl=`<div class="lt-wrap"><table class="lt"><thead><tr><th>#</th><th class="tm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>Pts</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.pos===i?'me':''}"><td>${r.pos}</td><td class="tm">${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td class="pts">${r.pts}</td></tr>`).join('')}</tbody></table></div>`;
+      tbl=`<div class="lt-wrap"><table class="lt"><thead><tr><th>#</th><th class="tm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>F</th><th>A</th><th>Pts</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.pos===i?'me':''}"><td>${r.pos}</td><td class="tm">${clubLogo(r.team,16)}${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}</td><td>${r.ga}</td><td class="pts">${r.pts}</td></tr>`).join('')}</tbody></table></div>`;
     }else tbl='<div class="card note" style="margin:0">'+esc(club)+' is not in the '+esc(T.name)+' table.</div>';
   }
   /* league games only */
@@ -2445,9 +2453,72 @@ function homeView(){
 const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th','st','nd','rd'][v]||'th')};
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
+/* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
+const REFKEY='myteamcompanion-ref-v1';
+const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
+async function refLoad(force){
+  if(!CLOUD||!DB.user||REF.busy)return;
+  if(!force&&REF.at&&Date.now()-REF.at<43200000)return;
+  REF.busy=true;
+  try{
+    REF.clubs=await rest('GET','/pro_clubs?select=slug,name,venue,city,capacity,founded,logo_url')||[];REF.at=Date.now();REF.memo={};
+    try{localStorage.setItem(REFKEY,JSON.stringify({clubs:REF.clubs,at:REF.at}))}catch(e){}
+    render();
+  }catch(e){}
+  REF.busy=false;
+}
+/* find the reference club for any spelling the feed uses; remembered so a table redraw stays cheap */
+function refClub(name){
+  const k=clubKey(String(name||''));if(!k)return null;
+  if(k in REF.memo)return REF.memo[k];
+  const by=sl=>REF.clubs.find(c=>c.slug===sl)||null;
+  let c=by(clubSlug(name));
+  if(!c){const u=UK_CLUBS.find(x=>sameClub(x[0],name));if(u)c=by(clubSlug(u[0]))}
+  if(REF.clubs.length)REF.memo[k]=c;
+  return c;
+}
+const clubLogo=(name,px)=>{const c=refClub(name);return c&&c.logo_url?`<img class="clg" src="${esc(c.logo_url)}" alt="" width="${px||16}" height="${px||16}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`:''};
+async function refSquadLoad(slug){
+  if(!CLOUD||!DB.user||!slug)return;
+  const e=REF.sq[slug]||(REF.sq[slug]={pl:null,st:null,at:0,busy:false});
+  if(e.busy||(e.at&&Date.now()-e.at<43200000))return;
+  if(!e.pl){try{const o=JSON.parse(localStorage.getItem('myteamcompanion-sq-'+slug)||'null');if(o){e.pl=o.pl;e.st=o.st;e.at=o.at;if(Date.now()-e.at<43200000)return}}catch(x){}}
+  e.busy=true;
+  try{
+    const pl=await rest('GET','/pro_squad?slug=eq.'+encodeURIComponent(slug)+'&select=season,ref_player_id,name,position,shirt,nationality,birth_date,height_cm,photo_url,on_loan&order=season.desc');
+    const st=await rest('GET','/pro_player_stats?slug=eq.'+encodeURIComponent(slug)+'&select=season,comp_id,ref_player_id,appearances,starts,minutes,goals,assists,yellow,red,clean_sheets&order=season.desc');
+    e.pl=pl||[];e.st=st||[];e.at=Date.now();
+    try{localStorage.setItem('myteamcompanion-sq-'+slug,JSON.stringify({pl:e.pl,st:e.st,at:e.at}))}catch(x){}
+    render();
+  }catch(x){}
+  e.busy=false;
+}
+const refAge=d=>{if(!d)return null;const b=new Date(d),n=new Date();let a=n.getFullYear()-b.getFullYear();if(n<new Date(n.getFullYear(),b.getMonth(),b.getDate()))a--;return a>0&&a<60?a:null};
+const SEAS=y=>y+'/'+String((y+1)%100).padStart(2,'0');
+function squadHtml(){
+  const t=S.team;if(!t||!t.proTeam)return '';
+  setTimeout(()=>refSquadLoad(t.proTeam),0);
+  const e=REF.sq[t.proTeam];
+  if(!e||!e.pl)return '';
+  if(!e.pl.length)return '';
+  const season=e.pl[0].season,sum={};
+  e.st.filter(x=>x.season===season).forEach(x=>{const o=sum[x.ref_player_id]||(sum[x.ref_player_id]={});['appearances','goals','assists','yellow','red','clean_sheets'].forEach(f=>{if(x[f]!=null)o[f]=(o[f]||0)+x[f]})});
+  const G=[['GK','Goalkeepers'],['DEF','Defenders'],['MID','Midfielders'],['ATT','Forwards'],['','Other']];
+  const cur=e.pl.filter(x=>x.season===season);
+  const grp=(k)=>cur.filter(x=>(x.position||'')===k).sort((a,b)=>(a.shirt==null)-(b.shirt==null)||(a.shirt||0)-(b.shirt||0)||a.name.localeCompare(b.name));
+  const row=x=>{const st=sum[x.ref_player_id]||{},age=refAge(x.birth_date);
+    const bits=[x.nationality,age!=null?age+' yrs':null,x.height_cm?x.height_cm+' cm':null,x.on_loan?'on loan':null].filter(Boolean).join(' · ');
+    const nums=['appearances','goals','assists'].map(f=>st[f]==null?'–':st[f]);
+    return `<div class="sqr"><span class="sqn">${x.shirt==null?'':esc(x.shirt)}</span>${x.photo_url?`<img class="sqp" src="${esc(x.photo_url)}" alt="" width="36" height="36" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">`:'<span class="sqp"></span>'}<div class="nm">${esc(x.name)}<small>${esc(bits)}</small></div><span class="sqs"><b>${nums[0]}</b><b>${nums[1]}</b><b>${nums[2]}</b></span></div>`};
+  const blocks=G.map(([k,l])=>{const g=grp(k);return g.length?`<h3 class="sqh">${l}</h3>${g.map(row).join('')}`:''}).join('');
+  return `<h2 style="margin:18px 0 6px;font-size:16px">Full squad · ${SEAS(season)}</h2>
+  <div class="note" style="margin:0 0 6px">The whole squad, including players who have not played yet. Right-hand figures are season totals in all competitions: <b>Apps</b> · <b>Goals</b> · <b>Assists</b>. A dash means not known.</div>
+  <div class="sqhead"><span></span><span class="sqs"><b>Apps</b><b>Gls</b><b>Ast</b></span></div>${blocks}`;
+}
 const TBLKEY='myteamcompanion-tables-v1';
 const TBL=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(TBLKEY)||'{}')}catch(e){}return {list:o.list||[],at:o.at||0,busy:false,err:''}})();
 async function tablesLoad(force){
+  refLoad();
   if(!CLOUD||!DB.user||TBL.busy)return;
   if(!force&&TBL.at&&Date.now()-TBL.at<600000)return;
   TBL.busy=true;TBL.err='';render();
@@ -2480,7 +2551,7 @@ function tablesView(){
     const fm=f=>`<span class="fm">${(f||[]).slice(-5).map(x=>`<i class="${x}">${x}</i>`).join('')}</span>`;
     body=`${list.length>1?`<div class="chips small" style="margin-bottom:8px">${list.map(T=>`<button class="${T.comp===cur.comp?'on':''}" data-act="tblPick" data-v="${esc(T.comp)}">${esc(T.name)}</button>`).join('')}</div>`:''}
     <div class="lt-wrap"><table class="lt"><thead><tr><th>#</th><th class="tm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>GF</th><th>GA</th><th>Form</th></tr></thead><tbody>
-    ${cur.rows.map(r=>`<tr class="${sameClub(r.team,club)?'me':''} ${zc(r.pos)}"><td>${r.pos}</td><td class="tm">${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td><td>${r.gf}</td><td>${r.ga}</td><td>${fm(r.form)}</td></tr>`).join('')}
+    ${cur.rows.map(r=>`<tr class="${sameClub(r.team,club)?'me':''} ${zc(r.pos)}"><td>${r.pos}</td><td class="tm">${clubLogo(r.team,16)}${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td><td>${r.gf}</td><td>${r.ga}</td><td>${fm(r.form)}</td></tr>`).join('')}
     </tbody></table></div>
     <div class="note" style="margin:0">${z?esc(z[3])+'. ':''}${when?'Updated '+esc(when)+'. ':''}${TBL.err?esc(TBL.err):''}</div>`;
   }
@@ -2575,6 +2646,7 @@ function statsView(){
   <tfoot><tr><td class="n"></td><td class="nm">Team</td>${STAT_COLS.map(c=>`<td>${cell(c,tot[c[1]])}</td>`).join('')}</tr></tfoot></table></div>
   <div class="note">Tap a column heading to sort, and tap it again to reverse. Sel = in the matchday squad · MP = played · St = started · Min = minutes played (to the final whistle, stoppage included) · 🅰 assists · 🎯 shots · 🔑 key passes · 🧤 saves · 🛡 key defending. Only finished matches count. Figures come from the club's published match feed (appearances, minutes, goals, assists and cards); shots, key passes, saves and defending are not in the feed. Tap a player for the full picture.</div>`
   :`<div class="empty"><b>No players yet</b>The squad fills in from the club's published line-ups. Open Results to refresh the feed.</div>`}
+  ${squadHtml()}
   </main>`;
 }
 
