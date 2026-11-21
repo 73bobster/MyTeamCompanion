@@ -2462,7 +2462,7 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='97';
+const APP_V='98';
 const REFKEY='myteamcompanion-ref-v2';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 async function refLoad(force){
@@ -2724,7 +2724,7 @@ const CLUB_LINKS={
  "motherwell":{site:"https://www.motherwellfc.co.uk"},
  "newcastle-united":{site:"https://www.nufc.co.uk"},
  "nottingham-forest":{site:"https://www.nottinghamforest.co.uk"},
- "rangers":{site:"https://www.rangers.co.uk",shop:"https://shop.rangers.co.uk/",official:[["Rangers Youth Development Company (RYDC)","https://www.rydc.co.uk"]],fans:[["Club 1872","https://club1872.co.uk"]],merch:[["Copland Streetwear","https://www.coplandstreetwear.co.uk/"],["North Section","https://www.northsection.co.uk/collections/rangers"]],media:[["RangersReview","https://www.rangersreview.co.uk/"],["Follow Follow","https://www.followfollow.com/"],["Edmiston Drive","https://www.edmistondrive.co.uk/"]],zines:[["Heart and Hand","https://www.heartandhand.co.uk/"]]},
+ "rangers":{site:"https://www.rangers.co.uk",shop:"https://shop.rangers.co.uk/",official:[["Rangers Youth Development Company (RYDC)","https://www.rydc.co.uk"]],fans:[["Club 1872","https://club1872.co.uk"]],merch:[["Copland Streetwear","https://www.coplandstreetwear.co.uk/"],["North Section","https://www.northsection.co.uk/collections/rangers"],["Edmiston Drive","https://www.edmistondrive.co.uk/"]],media:[["RangersReview","https://www.rangersreview.co.uk/"],["Follow Follow","https://www.followfollow.com/"]],zines:[["Heart and Hand","https://www.heartandhand.co.uk/"]]},
  "sunderland":{site:"https://www.safc.com"},
  "tottenham-hotspur":{site:"https://www.tottenhamhotspur.com",shop:"https://shop.tottenhamhotspur.com"}
 };
