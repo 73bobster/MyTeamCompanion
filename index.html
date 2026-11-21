@@ -67,7 +67,7 @@ header.top .bmk{display:inline-flex;align-items:center;justify-content:center;wi
 .prow .nm{flex:1;min-width:0;font-weight:600}
 .prow .num.lvtile{flex-direction:column;gap:1px;background:#fff;color:#d62839;border:2px solid #d62839;font-size:15px;line-height:1}.prow .num.lvtile span{font-size:10px;font-weight:800}
 .lvcard{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #d62839;border-radius:14px;padding:10px 12px;cursor:pointer}.lvcard .mn{font-weight:800;color:#d62839;min-width:46px;font-size:13px}.lvcard .mt{flex:1;min-width:0;font-weight:700}.lvcard .sc{font-weight:800;font-size:20px}.lvcard small{display:block;color:var(--mute);font-weight:400;font-size:12px}
-@keyframes lvp{50%{opacity:.25}}.lvdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d62839;margin-right:5px;animation:lvp 1.2s infinite}.lt tr.lv td:first-child{box-shadow:inset 3px 0 #d62839}
+@keyframes lvp{50%{opacity:.25}}.lvdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d62839;margin-right:5px;animation:lvp 1.2s infinite}.lt tr.lvr td:first-child{box-shadow:inset 3px 0 #d62839}
 .prow .nm small{display:block;color:var(--mute);font-weight:400;font-size:13px}
 .prow .num.dt{width:54px;height:auto;min-height:60px;padding:5px 0;flex-direction:column;gap:1px;line-height:1.1;font-size:inherit}
 .prow .num.dt b{font-size:19px;font-weight:800}
@@ -2468,7 +2468,7 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='101';
+const APP_V='102';
 const REFKEY='myteamcompanion-ref-v2';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 /* ---------- live games: score, minute and events from the football-data loader (via /api/live), polled while a game is on ---------- */
@@ -2660,7 +2660,7 @@ function tablesView(){
     const fm=f=>`<span class="fm">${(f||[]).slice(-5).map(x=>`<i class="${x}">${x}</i>`).join('')}</span>`;
     body=`${list.length>1?`<div class="chips small" style="margin-bottom:8px">${list.map(T=>`<button class="${T.comp===cur.comp?'on':''}" data-act="tblPick" data-v="${esc(T.comp)}">${esc(T.name)}</button>`).join('')}</div>`:''}
     <div class="lt-wrap"><table class="lt"><thead><tr><th>#</th><th class="tm">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>GF</th><th>GA</th><th>Form</th></tr></thead><tbody>
-    ${cur.rows.map(r=>`<tr class="${sameClub(r.team,club)?'me':''} ${zc(r.pos)} ${r.live?'lv':''}"><td>${r.pos}</td><td class="tm">${clubLogo(r.team,16)}${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td><td>${r.gf}</td><td>${r.ga}</td><td>${fm(r.form)}</td></tr>`).join('')}
+    ${cur.rows.map(r=>`<tr class="${sameClub(r.team,club)?'me':''} ${zc(r.pos)} ${r.live?'lvr':''}"><td>${r.pos}</td><td class="tm">${clubLogo(r.team,16)}${esc(r.team)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gd>0?'+'+r.gd:r.gd}</td><td class="pts">${r.pts}</td><td>${r.gf}</td><td>${r.ga}</td><td>${fm(r.form)}</td></tr>`).join('')}
     </tbody></table></div>
     <div class="note" style="margin:0">${cur.provisional?'<b style="color:#d62839">Live:</b> includes games in play and just finished, so places can change. ':''}${z?esc(z[3])+'. ':''}${when?'Updated '+esc(when)+'. ':''}${TBL.err?esc(TBL.err):''}</div>`;
   }
