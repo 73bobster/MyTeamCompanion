@@ -2454,14 +2454,14 @@ function homeView(){
   <div><h2>${esc(lg||'League')}${place?' · '+place:''}</h2>${tbl}</div>
   <div><h2>Last ${fin.length||6} league results</h2>${fin.length?`<div class="tiles" style="grid-template-columns:repeat(6,1fr)">${resT}</div>`:empty('No league results yet.')}</div>
   <div><h2>Next fixtures</h2>${nxt.length?`${fxT}`:empty('No league fixtures listed yet.')}</div>
-  <div class="note" style="text-align:center;margin:0">Version ${APP_V}${REF.clubs.length?' · '+REF.clubs.length+' club badges':' · badges not loaded'}</div>
+  <div class="note" style="text-align:center;margin:0">Version ${APP_V}${REF.clubs.length?' · '+REF.clubs.length+' club badges':' · badges not loaded'+(REF.busy?' (loading…)':REF.err?' ('+esc(String(REF.err).slice(0,80))+')':CLOUD&&DB.user?' (no error, '+(DB.user.guest?'guest':'signed in')+')':' (offline mode)')}</div>
   </main>`;
 }
 const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th','st','nd','rd'][v]||'th')};
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='91';
+const APP_V='92';
 const REFKEY='myteamcompanion-ref-v1';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 async function refLoad(force){
@@ -2472,7 +2472,8 @@ async function refLoad(force){
     REF.clubs=await rest('GET','/pro_clubs?select=slug,name,venue,city,capacity,founded,logo_url')||[];REF.at=Date.now();REF.memo={};
     try{localStorage.setItem(REFKEY,JSON.stringify({clubs:REF.clubs,at:REF.at}))}catch(e){}
     render();
-  }catch(e){}
+  REF.err='';
+  }catch(e){REF.err=(e&&e.message)||String(e)}
   REF.busy=false;
 }
 /* find the reference club for any spelling the feed uses; remembered so a table redraw stays cheap */
