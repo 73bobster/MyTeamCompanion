@@ -172,7 +172,7 @@ textarea.fb{width:100%;min-height:110px;font:inherit;padding:10px;border:1px sol
 .hb .l{width:38%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hb .t{flex:1;display:flex;height:16px;background:var(--line);border-radius:4px;overflow:hidden}
 .hb .t span{display:block;height:100%}
-.hb .v{width:30px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.hb .v{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}.hb .v i{font-style:normal;color:var(--mute);margin:0 3px;font-weight:400}
 .stat{font-size:12px;color:var(--mute)}
 .ocrbox{border:2px dashed var(--line);border-radius:14px;padding:12px;margin-bottom:12px;text-align:center}
 .ocrbox input{display:none}
@@ -2462,7 +2462,7 @@ const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th
 
 /* ---------- league tables (loaded from the feed, read only) ---------- */
 /* ---------- club and player reference data (crests, venues, full squads, official season totals) ---------- */
-const APP_V='94';
+const APP_V='95';
 const REFKEY='myteamcompanion-ref-v2';
 const REF=(()=>{let o={};try{o=JSON.parse(localStorage.getItem(REFKEY)||'{}')}catch(e){}return {clubs:o.clubs||[],at:o.at||0,busy:false,memo:{},sq:{}}})();
 async function refLoad(force){
@@ -2583,8 +2583,120 @@ function tablesView(){
 }
 
 /* ---------- links: official sites, shops and supporters' groups ---------- */
-/* Only addresses that have been checked are listed here. Anything missing falls back to a web search for the official page. */
+/* Official site addresses come from Wikidata (hand-checked for the main clubs). Anything missing falls back to a web search. */
 const CLUB_LINKS={
+ "accrington-stanley":{site:"https://www.accringtonstanley.co.uk"},
+ "afc-wimbledon":{site:"https://www.afcwimbledon.co.uk"},
+ "airdrieonians":{site:"https://www.airdriefc.com"},
+ "albion-rovers":{site:"https://www.albionroversfc.com"},
+ "alloa-athletic":{site:"https://www.alloaathletic.co.uk"},
+ "annan-athletic":{site:"https://www.annanathleticfc.com"},
+ "arbroath":{site:"https://www.arbroathfc.co.uk"},
+ "ayr-united":{site:"https://www.ayrunitedfc.co.uk"},
+ "barnet":{site:"https://www.barnetfc.com"},
+ "barnsley":{site:"https://www.barnsleyfc.co.uk"},
+ "barrow":{site:"https://www.barrowafc.com"},
+ "birmingham-city":{site:"https://www.bcfc.com"},
+ "blackburn-rovers":{site:"https://www.rovers.co.uk"},
+ "blackpool":{site:"https://www.blackpoolfc.co.uk"},
+ "bolton-wanderers":{site:"https://www.bwfc.co.uk"},
+ "bradford-city":{site:"https://www.bradfordcityfc.co.uk"},
+ "brechin-city":{site:"https://www.brechincity.com"},
+ "bristol-city":{site:"https://www.bcfc.co.uk"},
+ "bristol-rovers":{site:"https://www.bristolrovers.co.uk"},
+ "bromley":{site:"https://www.bromleyfc.net"},
+ "burnley":{site:"https://www.burnleyfootballclub.com"},
+ "burton-albion":{site:"https://www.burtonalbionfc.co.uk"},
+ "cambridge-united":{site:"https://www.cambridgeunited.com"},
+ "cardiff-city":{site:"https://www.cardiffcityfc.co.uk"},
+ "carlisle-united":{site:"https://www.carlisleunited.co.uk"},
+ "charlton-athletic":{site:"https://www.cafc.co.uk"},
+ "cheltenham-town":{site:"https://www.ctfc.com"},
+ "chesterfield":{site:"https://www.chesterfield-fc.co.uk"},
+ "clyde":{site:"https://www.clydefc.co.uk"},
+ "colchester-united":{site:"https://www.colchesterunited.net"},
+ "cove-rangers":{site:"https://www.coverangersfc.com"},
+ "cowdenbeath":{site:"https://www.cowdenbeathfc.com"},
+ "crawley-town":{site:"https://www.crawleytownfc.com"},
+ "crewe-alexandra":{site:"https://www.crewealex.net"},
+ "derby-county":{site:"https://www.dcfc.co.uk"},
+ "doncaster-rovers":{site:"https://www.doncasterroversfc.co.uk"},
+ "dumbarton":{site:"https://www.dumbartonfootballclub.com"},
+ "dunfermline-athletic":{site:"https://www.dafc.co.uk"},
+ "east-fife":{site:"https://www.eastfifefc.info"},
+ "edinburgh-city":{site:"https://www.edinburghcityfc.com"},
+ "elgin-city":{site:"https://www.elgincity.net"},
+ "exeter-city":{site:"https://www.exetercityfc.co.uk"},
+ "fleetwood-town":{site:"https://www.fleetwoodtownfc.com"},
+ "forest-green-rovers":{site:"https://www.fgr.co.uk"},
+ "forfar-athletic":{site:"https://www.forfarathletic.co.uk"},
+ "gillingham":{site:"https://www.gillinghamfootballclub.com"},
+ "greenock-morton":{site:"https://www.gmfc.net"},
+ "grimsby-town":{site:"https://www.gtfc.co.uk"},
+ "hamilton-academical":{site:"https://www.hamiltonacciesfc.co.uk"},
+ "harrogate-town":{site:"https://www.harrogatetownafc.com"},
+ "huddersfield-town":{site:"https://www.htafc.com"},
+ "inverness-caledonian-thistle":{site:"https://www.ictfc.com"},
+ "kelty-hearts":{site:"https://www.keltyhearts.co.uk"},
+ "leicester-city":{site:"https://www.lcfc.com"},
+ "leyton-orient":{site:"https://www.leytonorient.com"},
+ "lincoln-city":{site:"https://www.weareimps.com"},
+ "livingston":{site:"https://www.livingstonfc.co.uk"},
+ "luton-town":{site:"https://www.lutontown.co.uk"},
+ "mansfield-town":{site:"https://www.mansfieldtown.net"},
+ "middlesbrough":{site:"https://www.mfc.co.uk"},
+ "millwall":{site:"https://www.millwallfc.co.uk"},
+ "milton-keynes-dons":{site:"https://www.mkdons.com"},
+ "montrose":{site:"https://www.montrosefc.co.uk"},
+ "morecambe":{site:"https://www.morecambefc.com"},
+ "newport-county":{site:"https://www.newport-county.co.uk"},
+ "northampton-town":{site:"https://www.ntfc.co.uk"},
+ "norwich-city":{site:"https://www.canaries.co.uk"},
+ "notts-county":{site:"https://www.nottscountyfc.co.uk"},
+ "oldham-athletic":{site:"https://www.oldhamathletic.co.uk"},
+ "oxford-united":{site:"https://www.oufc.co.uk"},
+ "partick-thistle":{site:"https://www.ptfc.co.uk"},
+ "peterborough-united":{site:"https://www.theposh.com"},
+ "peterhead":{site:"https://www.peterheadfc.co.uk"},
+ "plymouth-argyle":{site:"https://www.pafc.co.uk"},
+ "port-vale":{site:"https://www.port-vale.co.uk"},
+ "portsmouth":{site:"https://www.portsmouthfc.co.uk"},
+ "preston-north-end":{site:"https://www.pnefc.net"},
+ "queen-of-the-south":{site:"https://www.qosfc.com"},
+ "queens-park":{site:"https://www.queensparkfc.co.uk"},
+ "queens-park-rangers":{site:"https://www.qpr.co.uk"},
+ "raith-rovers":{site:"https://www.raithrovers.net"},
+ "reading":{site:"https://www.readingfc.co.uk"},
+ "rochdale":{site:"https://www.rochdaleafc.co.uk"},
+ "ross-county":{site:"https://www.rosscountyfootballclub.co.uk"},
+ "rotherham-united":{site:"https://www.themillers.co.uk"},
+ "salford-city":{site:"https://www.salfordcityfc.co.uk"},
+ "sheffield-united":{site:"https://www.sufc.co.uk"},
+ "sheffield-wednesday":{site:"https://www.swfc.co.uk"},
+ "shrewsbury-town":{site:"https://www.shrewsburytown.com"},
+ "southampton":{site:"https://www.southamptonfc.com"},
+ "southend-united":{site:"https://www.southendunited.co.uk"},
+ "spartans":{site:"https://www.spartansfc.com"},
+ "st-johnstone":{site:"https://www.perthstjohnstonefc.co.uk"},
+ "st-mirren":{site:"https://www.stmirren.com"},
+ "stenhousemuir":{site:"https://www.stenhousemuirfc.com"},
+ "stevenage":{site:"https://www.stevenagefc.com"},
+ "stirling-albion":{site:"https://www.stirlingalbionfc.co.uk"},
+ "stockport-county":{site:"https://www.stockportcounty.com"},
+ "stoke-city":{site:"https://www.stokecityfc.com"},
+ "stranraer":{site:"https://www.stranraerfc.org"},
+ "sutton-united":{site:"https://www.suttonunited.net"},
+ "swansea-city":{site:"https://www.swanseacity.com"},
+ "swindon-town":{site:"https://www.swindontownfc.co.uk"},
+ "tranmere-rovers":{site:"https://www.tranmererovers.co.uk"},
+ "walsall":{site:"https://www.saddlers.co.uk"},
+ "watford":{site:"https://www.watfordfc.com"},
+ "west-bromwich-albion":{site:"https://www.wba.co.uk"},
+ "west-ham-united":{site:"https://www.whufc.com"},
+ "wigan-athletic":{site:"https://www.wiganathletic.com"},
+ "wolverhampton-wanderers":{site:"https://www.wolves.co.uk"},
+ "wrexham":{site:"https://www.wrexhamafc.co.uk"},
+ "wycombe-wanderers":{site:"https://www.wwfc.com"},
  "aberdeen":{site:"https://www.afc.co.uk"},
  "arsenal":{site:"https://www.arsenal.com",shop:"https://arsenaldirect.arsenal.com",fans:[["Arsenal Supporters' Trust","https://www.arsenaltrust.org"],["Arsenal Scotland Supporters Club","https://www.arsenalscotland.com"]]},
  "aston-villa":{site:"https://www.avfc.co.uk"},
@@ -2644,7 +2756,7 @@ function linksView(){
   ${row('Sky Sports football','https://www.skysports.com/football')}
   ${row('The Guardian football','https://www.theguardian.com/football')}
   ${row('Football Supporters\' Association','https://thefsa.org.uk')}
-  <div class="note">Links open in a new tab. Where we have not checked an address yet, the link runs a web search for it.</div>
+  <div class="note">Links open in a new tab. Where we do not have an address yet, the link runs a web search for it.</div>
   </main>`;
 }
 
@@ -2768,7 +2880,7 @@ function chartsHtml(d,L){
   /* who makes the goals */
   const con=L.filter(o=>o.goals||o.assists).sort((a,b)=>(b.goals+b.assists)-(a.goals+a.assists)||b.goals-a.goals).slice(0,8);
   const mc=Math.max(1,...con.map(o=>o.goals+o.assists));
-  const contrib=con.length?`<div class="chart"><h3>Goals and assists</h3>${con.map(o=>`<div class="hb"><span class="l">${esc(o.name)}</span><span class="t"><span style="width:${(100*o.goals/mc).toFixed(1)}%;background:${B}"></span><span style="width:${(100*o.assists/mc).toFixed(1)}%;background:#f59e0b"></span></span><span class="v">${o.goals+o.assists}</span></div>`).join('')}<div class="cl"><span><i style="background:${B}"></i>Goals</span><span><i style="background:#f59e0b"></i>Assists</span></div></div>`:'';
+  const contrib=con.length?`<div class="chart"><h3>Goals and assists</h3>${con.map(o=>`<div class="hb"><span class="l">${esc(o.name)}</span><span class="t"><span style="width:${(100*o.goals/mc).toFixed(1)}%;background:${B}"></span><span style="width:${(100*o.assists/mc).toFixed(1)}%;background:#f59e0b"></span></span><span class="v"><b style="color:${B}">${o.goals}</b><i>·</i><b style="color:#d97706">${o.assists}</b></span></div>`).join('')}<div class="cl"><span><i style="background:${B}"></i>Goals</span><span><i style="background:#f59e0b"></i>Assists</span></div></div>`:'';
   /* minutes played */
   const mn=L.filter(o=>o.mins>0).sort((a,b)=>b.mins-a.mins).slice(0,8),mm=Math.max(1,...mn.map(o=>o.mins));
   const mins=mn.length?`<div class="chart"><h3>Minutes played</h3>${mn.map(o=>`<div class="hb"><span class="l">${esc(o.name)}</span><span class="t"><span style="width:${(100*o.mins/mm).toFixed(1)}%;background:${B}"></span></span><span class="v" style="width:44px">${fmtN(o.mins)}</span></div>`).join('')}</div>`:'';
