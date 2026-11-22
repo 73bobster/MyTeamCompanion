@@ -6,7 +6,7 @@
 // Defaults: source bbc, both teams, last month through next month, --details recent, writes JSON only.
 // --details: fetch each finished game's page for goals, assists, cards, line-ups and subs. 'recent' = games from the last 3 days
 // (enough for an hourly poll, with a window to catch late corrections); 'all' = every finished game (use for a first backfill).
-// Polling rule: only runs between 13:00 and 23:59 UK time (override with --force). Run it hourly at most.
+// Polling rule: only runs between 13:00 and 05:59 UK time (override with --force). Run it hourly at most.
 // It never writes to the database itself: --sql produces an upsert for db/migrations/002_pro_matches.sql
 // that you (or a workflow holding a Neon secret) can run.
 import fs from 'node:fs';
@@ -24,7 +24,7 @@ const note = (s = '') => { summary.push(s); say(s); };
 export function ukHour(now = new Date()) {
   return +new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', hourCycle: 'h23' }).format(now);
 }
-export const inPollWindow = (now = new Date()) => ukHour(now) >= 13; // 13:00 to 23:59
+export const inPollWindow = (now = new Date()) => ukHour(now) >= 13 || ukHour(now) < 6; // 13:00 to 05:59 (runs after midnight pick up late finishes and the morning after)
 
 export function monthRange(from, to) {
   const out = [];
@@ -115,7 +115,7 @@ async function addDetails(rows, sourceId, mode) {
 
 async function main() {
   if (!args.force && !inPollWindow()) {
-    note(`Outside the polling window (13:00 to 23:59 UK time; it is ${ukHour()}:xx now). Nothing fetched. Use --force to override.`);
+    note(`Outside the polling window (13:00 to 05:59 UK time; it is ${ukHour()}:xx now). Nothing fetched. Use --force to override.`);
     return;
   }
   const sourceId = args.source || 'bbc';

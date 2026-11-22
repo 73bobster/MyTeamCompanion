@@ -3,7 +3,7 @@ name: Import favourite teams
 #  - push to the feature branch (importer changes): dry run, prints a report, never touches the database
 #    unless the commit message contains [load], which also loads a full backfill into Neon
 #  - Run workflow (by hand, once on the default branch): full backfill (--details all), loads into Neon
-#  - schedule: hourly, only inside 13:00-23:59 UK time (the script enforces the window), recent games only.
+#  - schedule: hourly, only inside 13:00-05:59 UK time (the script enforces the window), recent games only.
 #    GitHub runs schedules from the default branch, so this starts once the work is merged to main.
 # Needs for the database load: repository secret NEON_DATABASE_URL (Neon > project myteamcompanion > Connect > owner role).
 on:
@@ -16,7 +16,7 @@ on:
         description: 'Source: bbc (default) or apifootball (paid plan, needs APIFOOTBALL_KEY)'
         default: bbc
   schedule:
-    - cron: '55 * * * *'   # every hour; the importer itself only fetches inside 13:00-23:59 UK, but new clubs are backfilled at any hour
+    - cron: '55 * * * *'   # every hour; the importer itself only fetches inside 13:00-05:59 UK, but new clubs are backfilled at any hour
 permissions:
   contents: read
 concurrency:

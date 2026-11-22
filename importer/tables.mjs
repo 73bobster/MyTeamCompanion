@@ -1,6 +1,6 @@
 // League tables from BBC Sport table pages -> public.pro_tables (one row per competition, replaced each run).
 //   node importer/tables.mjs [--sql importer/out/tables.sql] [--force]
-// Same polling rule as the match import: only 13:00 to 23:59 UK time unless --force.
+// Same polling rule as the match import: only 13:00 to 05:59 UK time unless --force.
 import fs from 'node:fs';
 import path from 'node:path';
 import { htmlToLines } from './sources/bbc.mjs';

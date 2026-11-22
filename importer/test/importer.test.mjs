@@ -62,6 +62,8 @@ test('a derby on both clubs pages merges into one row', () => {
 test('month range, polling window and sql quoting', () => {
   assert.deepEqual(monthRange('2026-11', '2027-01'), ['2026-11', '2026-12', '2027-01']);
   assert.equal(inPollWindow(new Date('2026-11-02T12:59:00Z')), false); // 12:59 UK (GMT)
+  assert.equal(inPollWindow(new Date('2026-11-03T00:43:00Z')), true); // after midnight still polls
+  assert.equal(inPollWindow(new Date('2026-11-03T06:00:00Z')), false);
   assert.equal(inPollWindow(new Date('2026-11-02T13:00:00Z')), true);
   assert.equal(inPollWindow(new Date('2026-11-02T23:59:00Z')), true);
   assert.equal(inPollWindow(new Date('2026-07-02T12:30:00Z')), true); // 13:30 UK (BST)
